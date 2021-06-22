@@ -5,16 +5,18 @@
 MVP:
 
 - [ ] get cartpole env working
- - [x] RL.jl => traditional env
- - [ ] MuJoCo.jl => continuous robotic control
+    - [x] RL.jl => traditional env
+    - [ ] MuJoCo.jl => continuous robotic control
 - [ ] convert values to spike trains
- Conversion method:
- - [ ] rate based => poisson
- - [ ] sparse coding => time to first spike coding
- - [ ] population encoding => needs critic network...? 
+
+    Conversion method:
+    - [ ] rate based => poisson
+    - [ ] sparse coding => time to first spike coding
+    - [ ] population encoding => needs critic network...? 
+    - [ ] Dont convert and use cnn
 - [ ] make lsm (no stdp)
- - [ ] WaspNet.jl
- - [ ] Flux.jl
+    - [ ] WaspNet.jl
+    - [ ] Flux.jl
 - [ ] train and evaluate
 
 ADD-ONs:
