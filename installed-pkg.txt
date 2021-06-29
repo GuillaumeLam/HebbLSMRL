@@ -1,4 +1,0 @@
-followed instructions at https://github.com/JuliaML/OpenAIGym.jl
-
-change:
-Pkg.add(url="https://github.com/JuliaML/OpenAIGym.jl.git")

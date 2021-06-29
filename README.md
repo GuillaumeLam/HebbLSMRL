@@ -4,15 +4,14 @@
 
 MVP:
 
-- [ ] get cartpole env working
+- [x] get cartpole env working
     - [x] RL.jl => traditional env
     - [ ] MuJoCo.jl => continuous robotic control
-- [ ] convert values to spike trains
-
+- [x] convert values to spike trains
     Conversion method:
-    - [ ] rate based => poisson
+    - [x] rate based => poisson
     - [ ] sparse coding => time to first spike coding
-    - [ ] population encoding => needs critic network...? 
+    - [ ] population encoding => needs critic network...?
     - [ ] Dont convert and use cnn
 - [ ] make lsm (no stdp)
     - [ ] WaspNet.jl
@@ -24,3 +23,5 @@ ADD-ONs:
 - [ ] implement different encoding methods
 - [ ] add stdp
 - [ ] different architecture
+WaspNet
+ - [ ] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
