@@ -14,14 +14,15 @@ MVP:
     - [ ] population encoding => needs critic network...?
     - [ ] Dont convert and use cnn
 - [ ] make lsm (no stdp)
-    - [ ] WaspNet.jl
+    - [x] WaspNet.jl
     - [ ] Flux.jl
-- [ ] train and evaluate
+- [ ] add train of last layers
+- [ ] evaluate with RL
 
 ADD-ONs:
 - [ ] more complex env
-- [ ] implement different encoding methods
+- [ ] implement different input encoding methods
 - [ ] add stdp
 - [ ] different architecture
 WaspNet
- - [ ] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
+ - [x] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
