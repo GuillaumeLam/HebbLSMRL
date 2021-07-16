@@ -24,5 +24,8 @@ ADD-ONs:
 - [ ] implement different input encoding methods
 - [ ] add stdp
 - [ ] different architecture
+
+
 WaspNet
  - [x] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
+- [ ] add unit tests for inhiblif
