@@ -13,10 +13,10 @@ MVP:
     - [ ] sparse coding => time to first spike coding
     - [ ] population encoding => needs critic network...?
     - [ ] Dont convert and use cnn
-- [ ] make lsm (no stdp)
+- [x] make lsm (no stdp)
     - [x] WaspNet.jl
     - [ ] Flux.jl
-- [ ] add train of last layers
+- [x] add train of last layers
 - [ ] evaluate with RL
 
 ADD-ONs:
