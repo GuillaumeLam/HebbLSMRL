@@ -7,6 +7,11 @@ using LinearAlgebra
 using Random
 using SparseArrays
 
+using ReinforcementLearning
+using Flux
+using Flux.Losses
+using StableRNGs
+
 seed = 123
 Random.seed!(seed)
 
@@ -21,9 +26,12 @@ end
 function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
     sim = simulate!(net, poissonST(x), sim_τ, sim_T)
 
-    return normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ)
+    return vec(normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
 end
 
+# function (net::AbstractNetwork)(m::AbstractMatrix)
+#     return net.(m)
+# end
 
 @adjoint (net::AbstractNetwork)(x::AbstractVector) = (net::AbstractNetwork)(x), Δ -> (Δ,Δ)
 
@@ -139,12 +147,59 @@ end
 
 loss(ŷ,y) = sum((ŷ .- y).^2)
 
+opt = Descent(0.1)
+
 x, y = rand(4), rand(2)
 
 cartpole_param = LSMParams(4,2,"cartpole")
 
-opt = Descent(0.1)
-
 lsm, θ = res(cartpole_param,seed)
 
 train(lsm, x, y, θ, opt)
+
+
+rng = StableRNG(seed)
+env = CartPoleEnv(; T = Float32, rng = rng)
+ns, na = length(state(env)), length(action_space(env))
+
+env_params = LSMParams(ns,na,"cartpole")
+cartpole_lsm, ψ = res(env_params, seed)
+
+policy = Agent(
+    policy = QBasedPolicy(
+        learner = BasicDQNLearner(
+            approximator = NeuralNetworkApproximator(
+                model = cartpole_lsm |> cpu,
+                optimizer = opt,
+            ),
+            batch_size = 32,
+            min_replay_history = 100,
+            loss_func = loss,
+            rng = rng,
+        ),
+        explorer = EpsilonGreedyExplorer(
+            kind = :exp,
+            ϵ_stable = 0.01,
+            decay_steps = 500,
+            rng = rng,
+        ),
+    ),
+    trajectory = CircularArraySARTTrajectory(
+        capacity = 1000,
+        state = Vector{Float32} => (ns,),
+    ),
+)
+stop_condition = StopAfterStep(10_000, is_show_progress=!haskey(ENV, "CI"))
+hook = TotalRewardPerEpisode()
+
+import CUDA.device
+import ReinforcementLearning.send_to_host
+
+device(x::AbstractNetwork) = Val(:cpu)
+
+run(policy, env, stop_condition, hook)
+
+policy(env)
+
+# notes:
+# -determine negative value processing; currently: abs.(inputs) -> ignoring negative values
