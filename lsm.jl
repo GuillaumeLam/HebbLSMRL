@@ -29,9 +29,12 @@ function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
     return vec(normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
 end
 
-# function (net::AbstractNetwork)(m::AbstractMatrix)
-#     return net.(m)
-# end
+using SliceMap
+
+function (net::AbstractNetwork)(m::AbstractMatrix)
+    # return mapslices(net, m, dims=1)
+    return slicemap(net, m, dims=1)
+end
 
 @adjoint (net::AbstractNetwork)(x::AbstractVector) = (net::AbstractNetwork)(x), Δ -> (Δ,Δ)
 
@@ -172,7 +175,7 @@ policy = Agent(
                 model = cartpole_lsm |> cpu,
                 optimizer = opt,
             ),
-            batch_size = 32,
+            batch_size = 1,
             min_replay_history = 100,
             loss_func = loss,
             rng = rng,
@@ -189,17 +192,28 @@ policy = Agent(
         state = Vector{Float32} => (ns,),
     ),
 )
-stop_condition = StopAfterStep(10_000, is_show_progress=!haskey(ENV, "CI"))
+stop_condition = StopAfterStep(150, is_show_progress=!haskey(ENV, "CI"))
 hook = TotalRewardPerEpisode()
 
 import CUDA.device
-import ReinforcementLearning.send_to_host
+import Flux.params
+import RLBase.update!
+
 
 device(x::AbstractNetwork) = Val(:cpu)
 
-run(policy, env, stop_condition, hook)
+# hack to get right param
+# params(model::NeuralNetworkApproximator) = ψ
+
+# RLBase.update!(app::NeuralNetworkApproximator, gs) =
+# 	Flux.Optimise.update!(app.optimizer, last(app.model.layers).W, -reshape(collect(keys(gs.params.params.dict)), size(last(app.model.layers).W)))
+
 
 policy(env)
+
+params
+
+run(policy, env, stop_condition, hook)
 
 # notes:
 # -determine negative value processing; currently: abs.(inputs) -> ignoring negative values
