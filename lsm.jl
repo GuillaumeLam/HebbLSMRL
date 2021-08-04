@@ -6,6 +6,7 @@ using Zygote: @adjoint
 using LinearAlgebra
 using Random
 using SparseArrays
+using Distributions
 
 using ReinforcementLearning
 using Flux
@@ -23,8 +24,21 @@ function create_conn(val, avg_conn, ub, n)
     end
 end
 
+function genPositiveArr!(arr::AbstractVector)
+	s = map(arr) do e
+		if e < 0
+			return [0, abs(e)]
+		else
+			return [e, 0]
+		end
+	end
+
+	return vcat(s...)
+end
+
 function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
-    sim = simulate!(net, poissonST(x), sim_τ, sim_T)
+    poissonST = getPoissonST(genPositiveArr!(x), Bernoulli)
+    sim = simulate!(net, poissonST, sim_τ, sim_T)
 
     return vec(normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
 end
@@ -152,20 +166,21 @@ loss(ŷ,y) = sum((ŷ .- y).^2)
 
 opt = Descent(0.1)
 
-x, y = rand(4), rand(2)
 
-cartpole_param = LSMParams(4,2,"cartpole")
-
-lsm, θ = res(cartpole_param,seed)
-
-train(lsm, x, y, θ, opt)
+# x, y = rand(4), rand(2)
+#
+# cartpole_param = LSMParams(4,2,"cartpole")
+#
+# lsm, θ = res(cartpole_param,seed)
+#
+# train(lsm, x, y, θ, opt)
 
 
 rng = StableRNG(seed)
 env = CartPoleEnv(; T = Float32, rng = rng)
 ns, na = length(state(env)), length(action_space(env))
 
-env_params = LSMParams(ns,na,"cartpole")
+env_params = LSMParams(ns*2,na,"cartpole")
 cartpole_lsm, ψ = res(env_params, seed)
 
 policy = Agent(
@@ -192,12 +207,12 @@ policy = Agent(
         state = Vector{Float32} => (ns,),
     ),
 )
-stop_condition = StopAfterStep(150, is_show_progress=!haskey(ENV, "CI"))
+stop_condition = StopAfterStep(1000, is_show_progress=!haskey(ENV, "CI"))
 hook = TotalRewardPerEpisode()
 
 import CUDA.device
-import Flux.params
-import RLBase.update!
+# import Flux.params
+# import RLBase.update!
 
 
 device(x::AbstractNetwork) = Val(:cpu)
@@ -209,9 +224,9 @@ device(x::AbstractNetwork) = Val(:cpu)
 # 	Flux.Optimise.update!(app.optimizer, last(app.model.layers).W, -reshape(collect(keys(gs.params.params.dict)), size(last(app.model.layers).W)))
 
 
-policy(env)
+# policy(env)
 
-params
+# params
 
 run(policy, env, stop_condition, hook)
 
