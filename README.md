@@ -17,7 +17,8 @@ MVP:
     - [x] WaspNet.jl
     - [ ] Flux.jl
 - [x] add train of last layers
-- [ ] evaluate with RL
+- [x] evaluate with RL
+- [ ] fix gradients
 
 ADD-ONs:
 - [ ] more complex env

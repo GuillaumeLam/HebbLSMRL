@@ -53,7 +53,7 @@ end
 @adjoint (net::AbstractNetwork)(x::AbstractVector) = (net::AbstractNetwork)(x), Δ -> (Δ,Δ)
 
 
-function train(network::AbstractNetwork, x, y, θ, opt)
+function train(network::AbstractNetwork, x, y, opt)
     println("Training")
 
     println("Initial Prediction")
@@ -65,10 +65,14 @@ function train(network::AbstractNetwork, x, y, θ, opt)
     println("weight matrix")
     println(last(network.layers).W)
 
+	θ = Flux.params(network)
+
     grads = gradient(() -> loss(ŷ,y), θ)
-    w_grads = reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W))
-    println(w_grads)
-    update!(opt, last(network.layers).W, -reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W)))
+    # w_grads = reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W))
+    # println(w_grads)
+    # update!(opt, last(network.layers).W, -reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W)))
+
+	update!(opt, θ, grads)
 
     println("New Better Prediction")
     ŷ = network(x)
@@ -157,9 +161,8 @@ function res(params::LSMParams, seed::Number)
     out_l = Layer(out_n, w)
 
     net = Network([in_l, res, lout_l, out_l], params.n_in)
-    θ = Params(w)
 
-    return net, θ
+    return net
 end
 
 loss(ŷ,y) = sum((ŷ .- y).^2)
@@ -167,13 +170,21 @@ loss(ŷ,y) = sum((ŷ .- y).^2)
 opt = Descent(0.1)
 
 
-# x, y = rand(4), rand(2)
-#
-# cartpole_param = LSMParams(4,2,"cartpole")
-#
-# lsm, θ = res(cartpole_param,seed)
-#
-# train(lsm, x, y, θ, opt)
+x, y = rand(4), rand(2)
+
+cartpole_param = LSMParams(8,2,"cartpole")
+
+lsm = res(cartpole_param,seed)
+
+train(lsm, x, y, opt)
+
+
+import CUDA.device
+import Flux.params
+
+device(x::AbstractNetwork) = Val(:cpu)
+
+Flux.trainable(model::AbstractNetwork) = (last(model.layers).W,)
 
 
 rng = StableRNG(seed)
@@ -181,7 +192,7 @@ env = CartPoleEnv(; T = Float32, rng = rng)
 ns, na = length(state(env)), length(action_space(env))
 
 env_params = LSMParams(ns*2,na,"cartpole")
-cartpole_lsm, ψ = res(env_params, seed)
+cartpole_lsm = res(env_params, seed)
 
 policy = Agent(
     policy = QBasedPolicy(
@@ -190,7 +201,7 @@ policy = Agent(
                 model = cartpole_lsm |> cpu,
                 optimizer = opt,
             ),
-            batch_size = 1,
+            batch_size = 32,
             min_replay_history = 100,
             loss_func = loss,
             rng = rng,
@@ -210,25 +221,4 @@ policy = Agent(
 stop_condition = StopAfterStep(1000, is_show_progress=!haskey(ENV, "CI"))
 hook = TotalRewardPerEpisode()
 
-import CUDA.device
-# import Flux.params
-# import RLBase.update!
-
-
-device(x::AbstractNetwork) = Val(:cpu)
-
-# hack to get right param
-# params(model::NeuralNetworkApproximator) = ψ
-
-# RLBase.update!(app::NeuralNetworkApproximator, gs) =
-# 	Flux.Optimise.update!(app.optimizer, last(app.model.layers).W, -reshape(collect(keys(gs.params.params.dict)), size(last(app.model.layers).W)))
-
-
-# policy(env)
-
-# params
-
 run(policy, env, stop_condition, hook)
-
-# notes:
-# -determine negative value processing; currently: abs.(inputs) -> ignoring negative values
