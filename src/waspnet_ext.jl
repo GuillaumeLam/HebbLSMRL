@@ -45,12 +45,26 @@ function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
     return vec(LinearAlgebra.normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
 end
 
+function forward()
+
 function (net::AbstractNetwork)(m::AbstractMatrix)
     # return mapslices(net, m, dims=1)
     return SliceMap.slicemap(net, m, dims=1)
 end
 
-Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) = (net::AbstractNetwork)(x), Δ -> (Δ,Δ)
+∂relu(n::Number) = n >= 0 ? 1. : 0.
+∂relu(l::AbstractVector) = ∂relu.(l)
+
+function ∂lsm∂W(net::AbstractNetwork)
+    h = net.layers[end-1].output
+    return ∂relu(last(net.layers).W * h)*h'
+    # return _∂lsm∂W(last(net.layers).W, h)
+end
+
+# _∂lsm∂W(w,h) = ∂relu(w * h)*h'
+
+Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) =
+    (net::AbstractNetwork)(x), Δ -> (∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
 Flux.trainable(model::AbstractNetwork) = (last(model.layers).W,)
 CUDA.device(x::AbstractNetwork) = Val(:cpu)
 
@@ -59,7 +73,7 @@ CUDA.device(x::AbstractNetwork) = Val(:cpu)
 # Network Constructor
 ###
 
-function init_res(params::LSMParams, seed::Number=123)
+function init_res!(params::LSMParams, w, seed::Number=123)
     rng = Random.seed!(seed)
 
     ### liquid-in layer creation
@@ -99,7 +113,7 @@ function init_res(params::LSMParams, seed::Number=123)
 
     ###
     out_n = [WaspNet.ReLU() for _ in 1:params.n_out]
-    w = rand(rng, params.n_out, params.res_out)
+    copy!(w,rand(rng, params.n_out, params.res_out))
     out_l = Layer(out_n, w)
 
     net = Network([in_l, res, lout_l, out_l], params.n_in)
