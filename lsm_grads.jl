@@ -56,17 +56,13 @@ end
 
 opt = Descent(0.1)
 
-
 rng = Random.seed!(seed)
-
 X, Y = rand(rng, 4), rand(rng, 2)
-
 cartpole_param = LSM.LSMParams(8,2,"cartpole")
-
 W = rand(cartpole_param.n_out,cartpole_param.res_out)
-lsm = LSM.init_res!(cartpole_param, W, seed)
+lsm = LSM.LSM_Wrapper(cartpole_param, W, rng)
 
-gs = Zygote.gradient(() -> Flux.mse(lsm(X), Y), params(lsm))
+gs = gradient(() -> Flux.mse(lsm(X), Y), params(lsm))
 gs[W]
 #=
 gradient associated with W is currently in the wrong entry, simply need to fix

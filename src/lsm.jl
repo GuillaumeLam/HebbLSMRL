@@ -13,6 +13,6 @@ using Zygote
 include("waspnet_ext.jl")
 include("util.jl")
 
-export LSMParams, init_res
+export LSMParams, LSM_Wrapper
 
 end  # module LSM

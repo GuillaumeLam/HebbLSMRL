@@ -33,52 +33,94 @@ struct LSMParams{I<:Real, F<:Real}
     )
 end
 
+mutable struct LSM_Wrapper{M<:AbstractMatrix, N<:AbstractNetwork}
+    W_readout::M
+    reservoir::N
+
+    function (lsm::LSM_Wrapper)(x)
+        h = Zygote.ignore() do
+            h = lsm.reservoir(x)
+            return h
+        end
+        z = relu.(lsm.W_readout*h)
+        return z
+    end
+
+    LSM_Wrapper(W::M, res::N) where {M<:AbstractMatrix, N<:AbstractNetwork} =
+        new{M,N}(W, res)
+
+    # function LSM_Wrapper(params::P, rng) where {P<:LSMParams}
+    #     reservoir = LSM.init_res(params, rng)
+    #     W_readout = rand(rng, params.n_out, params.res_out)
+    #     return LSM_Wrapper(W_readout, reservoir)
+    # end
+
+    function LSM_Wrapper(params::P, rng::R) where {P<:LSMParams,R<:AbstractRNG}
+        reservoir = init_res(params, rng)
+        W_readout = rand(rng, params.n_out, params.res_out)
+        return LSM_Wrapper(W_readout, reservoir)
+    end
+
+    function LSM_Wrapper(params::P, W::M, rng::R) where {P<:LSMParams,M<:AbstractMatrix,R<:AbstractRNG}
+        reservoir = init_res(params, rng)
+        copy!(W, rand(rng, params.n_out, params.res_out))
+        return LSM_Wrapper(W, reservoir)
+    end
+end
+
 
 ###
 # Overloaded functions
 ###
 
 function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
-    poissonST = getPoissonST(genPositiveArr!(x), Distributions.Bernoulli)
+    poissonST = WaspNet.getPoissonST(genPositiveArr!(x), Distributions.Bernoulli)
     sim = simulate!(net, poissonST, sim_τ, sim_T)
 
-    return vec(LinearAlgebra.normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
-end
+    idx = length(last(net.prev_outputs))-1
 
-### intermediate func of W
-# function forward()
+    output_smmd = sum(sim.outputs[end-idx:end,:],dims=2)
+
+    # normalization to be transfered to output layer of LSM_wrapper
+    output_nrmlzd = vec(LinearAlgebra.normalize(output_smmd, sim_T/sim_τ))
+
+    return output_nrmlzd
+end
 
 function (net::AbstractNetwork)(m::AbstractMatrix)
     # return mapslices(net, m, dims=1)
     return SliceMap.slicemap(net, m, dims=1)
 end
 
-∂relu(n::Number) = n >= 0 ? 1. : 0.
-∂relu(l::AbstractVector) = ∂relu.(l)
-
-function ∂lsm∂W(net::AbstractNetwork)
-    h = net.layers[end-1].output
-    return ∂relu(last(net.layers).W * h)*h'
-    # return _∂lsm∂W(last(net.layers).W, h)
-end
-
-# _∂lsm∂W(w,h) = ∂relu(w * h)*h'
-
+# ∂relu(n::Number) = n >= 0 ? 1. : 0.
+# ∂relu(l::AbstractVector) = ∂relu.(l)
+#
+# function ∂lsm∂W(net::AbstractNetwork)
+#     h = net.layers[end-1].output
+#     return ∂relu(last(net.layers).W * h)*h'
+#     # return _∂lsm∂W(last(net.layers).W, h)
+# end
+#
+# # _∂lsm∂W(w,h) = ∂relu(w * h)*h'
+#
 # Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) =
 #     (net::AbstractNetwork)(x), Δ -> (∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
 
 
-Flux.trainable(model::AbstractNetwork) = (last(model.layers).W,)
-CUDA.device(x::AbstractNetwork) = Val(:cpu)
+# Flux.trainable(model::AbstractNetwork) = (last(model.layers).W,)
+Flux.trainable(lsm::LSM_Wrapper) = (lsm.W_readout,)
+
+# Flux.@functor LSM (W_readout,)
+
+# CUDA.device(x::AbstractNetwork) = Val(:cpu)
+CUDA.device(lsm::LSM_Wrapper) = Val(:cpu)
 
 
 ###
 # Network Constructor
 ###
 
-function init_res!(params::LSMParams, w, seed::Number=123)
-    rng = Random.seed!(seed)
-
+function init_res(params::LSMParams, rng::AbstractRNG)
     ### liquid-in layer creation
     in_n = [WaspNet.LIF() for _ in 1:params.res_in]
     in_w = randn(rng, params.res_in, params.n_in)
@@ -115,11 +157,11 @@ function init_res!(params::LSMParams, w, seed::Number=123)
     lout_l = Layer(lout_n, W_lout)
 
     ###
-    out_n = [WaspNet.ReLU() for _ in 1:params.n_out]
-    copy!(w,rand(rng, params.n_out, params.res_out))
-    out_l = Layer(out_n, w)
+    # out_n = [WaspNet.ReLU() for _ in 1:params.n_out]
+    # copy!(w,rand(rng, params.n_out, params.res_out))
+    # out_l = Layer(out_n, Matrix(I, params.res_out, params.res_out))
 
-    net = Network([in_l, res, lout_l, out_l], params.n_in)
+    net = Network([in_l, res, lout_l], params.n_in)
 
     return net
 end
