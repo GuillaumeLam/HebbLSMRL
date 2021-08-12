@@ -45,7 +45,8 @@ function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
     return vec(LinearAlgebra.normalize(sum(sim.outputs[end-(length(last(net.prev_outputs))-1):end,:],dims=2), sim_T/sim_τ))
 end
 
-function forward()
+### intermediate func of W
+# function forward()
 
 function (net::AbstractNetwork)(m::AbstractMatrix)
     # return mapslices(net, m, dims=1)
@@ -63,8 +64,10 @@ end
 
 # _∂lsm∂W(w,h) = ∂relu(w * h)*h'
 
-Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) =
-    (net::AbstractNetwork)(x), Δ -> (∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
+# Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) =
+#     (net::AbstractNetwork)(x), Δ -> (∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
+
+
 Flux.trainable(model::AbstractNetwork) = (last(model.layers).W,)
 CUDA.device(x::AbstractNetwork) = Val(:cpu)
 

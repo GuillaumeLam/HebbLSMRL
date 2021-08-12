@@ -1,7 +1,7 @@
 include("./src/lsm.jl")
 
 using WaspNet
-using Flux: update!
+using Flux
 using Random
 using Zygote
 
@@ -63,8 +63,26 @@ X, Y = rand(rng, 4), rand(rng, 2)
 
 cartpole_param = LSM.LSMParams(8,2,"cartpole")
 
-lsm, w = LSM.init_res(cartpole_param, seed)
+W = rand(cartpole_param.n_out,cartpole_param.res_out)
+lsm = LSM.init_res!(cartpole_param, W, seed)
 
+gs = Zygote.gradient(() -> Flux.mse(lsm(X), Y), params(lsm))
+gs[W]
+#=
+gradient associated with W is currently in the wrong entry, simply need to fix
+this issue. Perahps adding an intermediate function in
+=#
+
+gs.grads
+
+using ChainRules
+
+
+ChainRules.rrule(net::WaspNet.AbstractNetwork, x::AbstractVector) =
+	net(x), Δ -> (WaspNet.∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
+
+# Zygote.@adjoint (net::AbstractNetwork)(x::AbstractVector) =
+#     (net::AbstractNetwork)(x), Δ -> (∂lsm∂W(net)*sum(Δ)/length(Δ), nothing)
 
 y, back = Zygote._pullback(lsm, X)
 
@@ -78,21 +96,15 @@ g.grads
 
 
 Ŷ = rand(2)
-gs = Zygote.gradient(() -> loss(lsm(X), Y), Flux.params(lsm))
-gs.grads
 
-w
+Flux.params(lsm)
 g
 Flux.Optimise.update!(opt, Flux.params(lsm)[1], g[1])
 
 g = Zygote.gradient(model -> loss(Y, model(X)), lsm)
 loss(Y, lsm(X))
 
-y, back = Zygote._pullback(loss, Y, lsm(X))
-back(y)
 
-y, back = Zygote._pullback(lsm, X)
-back(1)
 
 
 using ReinforcementLearning
@@ -140,3 +152,12 @@ end
 
 RLBase.update!(app::NeuralNetworkApproximator, gs) =
     Flux.Optimise.update!(app.optimizer, params(app), gs)
+
+
+y_t, back_t = Zygote._pullback(loss, lsm(X), Y)
+
+back_t(y_t)
+
+y, back = Zygote._pullback(lsm, X)
+
+back(y)
