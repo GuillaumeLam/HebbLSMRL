@@ -7,7 +7,7 @@ using Zygote
 
 seed = 123
 
-function train(network::AbstractNetwork, x, y, opt)
+function train(network::LSM.LSM_Wrapper, x, y, opt)
     println("Training")
 
     println("Initial Prediction")
@@ -17,20 +17,21 @@ function train(network::AbstractNetwork, x, y, opt)
     # println("loss")
     # println(loss(ŷ,y))
     println("weight matrix")
-    println(last(network.layers).W)
+    println(network.W_readout)
 
 	θ = Flux.params(network)
 
     # grads = gradient(() -> loss(ŷ,y), θ)
 	# grads = Zygote.gradient(() -> loss(y, network(x)), θ)
-	grads = Zygote.gradient(model -> loss(y, model(x)), network)
+	# grads = Zygote.gradient(model -> loss(y, model(x)), network)
+	grads = gradient(() -> loss(network(X), Y), θ)
 
     # w_grads = reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W))
     # println(w_grads)
     # update!(opt, last(network.layers).W, -reshape(collect(keys(grads.params.params.dict)), size(last(network.layers).W)))
 
-	# Flux.Optimise.update!(opt, θ, grads)
-	Flux.Optimise.update!(opt, θ[1], grads[1])
+	Flux.Optimise.update!(opt, θ, grads)
+	# Flux.Optimise.update!(opt, θ[1, grads[1])
 
     println("New Better Prediction")
     # ŷ = network(x)
@@ -40,12 +41,12 @@ function train(network::AbstractNetwork, x, y, opt)
     # println(loss(ŷ,y))
 	loss(y, network(x))
     println("weight matrix")
-    println(last(network.layers).W)
+	println(network.W_readout)
 
 	return grads
 end
 
-loss(ŷ,y) = sum((ŷ .- y).^2)./length(y)
+# loss(ŷ,y) = sum((ŷ .- y).^2)./length(y)
 
 function loss(ŷ, y)
 	l = sum((ŷ .- y).^2)./length(y)

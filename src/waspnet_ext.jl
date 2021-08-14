@@ -28,7 +28,7 @@ struct LSMParams{I<:Real, F<:Real}
 
     LSMParams(n_in::I, n_out::I, env::String) where {I<:Real} = (
         if env == "cartpole"
-            return LSMParams(n_in,10,120,30,10,n_out,5,1)
+            return LSMParams(n_in,32,120,30,32,n_out,3,4)
         end
     )
 end
@@ -42,7 +42,7 @@ mutable struct LSM_Wrapper{M<:AbstractMatrix, N<:AbstractNetwork}
             h = lsm.reservoir(x)
             return h
         end
-        z = relu.(lsm.W_readout*h)
+        z = lsm.W_readout*h
         return z
     end
 
