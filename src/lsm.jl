@@ -10,8 +10,9 @@ using SparseArrays
 using WaspNet
 using Zygote
 
-include("waspnet_ext.jl")
 include("util.jl")
+include("waspnet_ext.jl")
+
 
 export LSMParams, LSM_Wrapper
 
