@@ -4,13 +4,9 @@ mutable struct LSM_Wrapper{N<:AbstractNetwork}
 
     function (lsm::LSM_Wrapper)(x)
         h = Zygote.ignore() do
-            out = lsm.reservoir(x)
-            return out
+            return lsm.reservoir(x)
         end
         z = lsm.readout_model(h)
-        if any(isnan.(z))
-            println(z)
-        end
         return z
     end
 
@@ -19,8 +15,8 @@ mutable struct LSM_Wrapper{N<:AbstractNetwork}
 
     function LSM_Wrapper(params::P, rng::R) where {P<:LSMParams,R<:AbstractRNG}
         reservoir = init_res(params, rng)
-        readout = Chain(Dense(params.ne, params.res_out, relu; init = Flux.glorot_uniform(rng)),
-            Dense(params.res_out, params.n_out; init = Flux.glorot_uniform(rng)))
+        readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
+            Dense(rand(rng, params.n_out, params.res_out), rand(rng,params.n_out)))
         return LSM_Wrapper(readout, reservoir)
     end
 
@@ -36,16 +32,18 @@ end
 ###
 
 function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
-    poissonST = WaspNet.getPoissonST(genPositiveArr!(x), Distributions.Bernoulli)
+    poissonST = WaspNet.getPoissonST(genPositiveArr(genCappedArr(x,[2.5,0.5,0.28,0.88])), Distributions.Bernoulli)
     sim = simulate!(net, poissonST, sim_τ, sim_T)
 
     idx = length(last(net.prev_outputs))-1
 
     output_smmd = sum(sim.outputs[end-idx:end-Int(0.2*(idx+1)),:],dims=2)
 
-    output_nrmlzd = vec(LinearAlgebra.normalize(output_smmd, sim_T/sim_τ))
-
-    return output_nrmlzd
+    if all(output_smmd.==0)
+        return vec(output_smmd)
+    else
+        return vec(LinearAlgebra.normalize(output_smmd, sim_T/sim_τ))
+    end
 end
 
 function (net::AbstractNetwork)(m::AbstractMatrix)
