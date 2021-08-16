@@ -8,6 +8,9 @@ mutable struct LSM_Wrapper{N<:AbstractNetwork}
             return out
         end
         z = lsm.readout_model(h)
+        if any(isnan.(z))
+            println(z)
+        end
         return z
     end
 
