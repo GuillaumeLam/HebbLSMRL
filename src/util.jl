@@ -41,7 +41,7 @@ function create_conn(val, avg_conn, ub, n)
     end
 end
 
-function genPositiveArr!(arr::AbstractVector)
+function genPositiveArr(arr::AbstractVector)
 	s = map(arr) do e
 		if e < 0
 			return [0, abs(e)]
@@ -51,4 +51,18 @@ function genPositiveArr!(arr::AbstractVector)
 	end
 
 	return vcat(s...)
+end
+
+function genCappedArr(arr::AbstractVector, caps::AbstractVector)
+	h = broadcast(arr, caps) do val, cap
+		if val <= -cap
+			return -cap
+		elseif val >= cap
+			return cap
+		else
+			return val
+		end
+	end
+
+	return h
 end
