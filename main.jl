@@ -1,50 +1,22 @@
-include("./src/lsm.jl")
+using Pkg
+Pkg.activate(".")
 
-# using .LSM
+include("./data_pipeline_util.jl")
 
-using ReinforcementLearning
-using Flux
-using Random
-using StableRNGs
+using DelimitedFiles
 
-seed = 123
-rng = StableRNG(seed)
-Random.seed!(seed)
+seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456]
 
-env = CartPoleEnv(; T = Float32, rng = rng)
-ns, na = length(state(env)), length(action_space(env))
+# reward = run_exp(seeds[1])
 
-env_param = LSM.LSMParams(ns*2,na,"cartpole")
-cartpole_lsm = LSM.LSM_Wrapper(env_param, rng)
-opt = RMSProp(0.0002, 0.99)
-total_steps = 1_000
+total_eps = 500
 
-policy = Agent(
-    policy = QBasedPolicy(
-        learner = BasicDQNLearner(
-            approximator = NeuralNetworkApproximator(
-                model = cartpole_lsm |> cpu,
-                optimizer = opt,
-            ),
-            batch_size = 32,
-            min_replay_history = 100,
-            loss_func = Flux.mse,
-            rng = rng,
-        ),
-        explorer = EpsilonGreedyExplorer(
-            kind = :exp,
-            ϵ_stable = 0.001,
-            decay_steps = Int64(0.1*total_steps),
-            rng = rng,
-        ),
-    ),
-    trajectory = CircularArraySARTTrajectory(
-        capacity = Int64(0.1*total_steps),
-        state = Vector{Float32} => (ns,),
-    ),
-)
-
-stop_condition = StopAfterStep(total_steps, is_show_progress=!haskey(ENV, "CI"))
-hook = TotalRewardPerEpisode()
-
-run(policy, env, stop_condition, hook)
+@info "Running Experiments"
+for (i, seed) in enumerate(seeds)
+	reward = run_exp(seed; total_eps=total_eps)	#; total_eps=500
+	@info "Completed $(i/10)% of experiments"
+	io = open("./results/QLSM-total_ep=$total_eps.txt", "a") do io
+		writedlm(io, reward')
+		@info "Logging run"
+	end
+end
