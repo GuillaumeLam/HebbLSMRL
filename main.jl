@@ -14,10 +14,11 @@ total_eps = 500
 
 @info "Running Experiments"
 for (i, seed) in enumerate(seeds)
+	@info "Starting experiment $i"
 	reward = run_exp(seed; total_eps=total_eps)	#; total_eps=500
-	@info "Completed $(i/10)% of experiments"
+	@info "Completed $(i/length(seeds)*100)% of experiments"
 	io = open("./results/QLSM-total_ep=$total_eps.txt", "a") do io
 		writedlm(io, reward')
-		@info "Logging run"
+		@info "Logged run!"
 	end
 end
