@@ -9,6 +9,7 @@ seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456]
 
 # reward = run_exp(seeds[1])
 
+#todo: run bottom code for array of total eps ie to generate all data
 total_eps = 500
 
 @info "Running Experiments"
