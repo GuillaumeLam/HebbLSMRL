@@ -11,8 +11,9 @@ cartpole_lsm(ns, na, env, rng) = begin
 end
 
 cartpole_lsm_discr(ns, na, env, rng) = begin
-    env_param = LSM.LSMParams(ns*11,na,"cartpole")
-    LSM.LSM_Wrapper(env_param, rng, (x)->LSM.discretize(x,[2.5,0.5,0.28,0.88]))
+    n = 10
+    env_param = LSM.LSMParams(ns*(n+1),na,"cartpole")
+    LSM.LSM_Wrapper(env_param, rng, (x)->LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
 end
 
 cartpole_nn(ns, na, env, rng) = begin

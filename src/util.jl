@@ -81,7 +81,7 @@ function genCapped(m::AbstractMatrix, caps::AbstractVector)
 	return cm
 end
 
-function discretize(arr::AbstractVector, caps::AbstractVector)
+function discretize(arr::AbstractVector, caps::AbstractVector, n)
 	s = broadcast(arr,caps) do a, c
 		val = begin
 			if a <= -c
@@ -93,11 +93,11 @@ function discretize(arr::AbstractVector, caps::AbstractVector)
 			end
 		end
 
-		rng = collect(-c:(2*c/10):c)
+		rng = collect(-c:(2*c/n):c)
 
 		idx = searchsorted(rng,val).stop
 
-		v = zeros(11)
+		v = zeros(n+1)
 		v[idx] = abs(rng[idx])
 
 		return v
@@ -106,9 +106,9 @@ function discretize(arr::AbstractVector, caps::AbstractVector)
 	return vcat(s...)
 end
 
-function discretize(m::AbstractMatrix, caps::AbstractVector)
+function discretize(m::AbstractMatrix, caps::AbstractVector, n)
 	dm = mapslices(m, dims=1) do arr
-		return discretize(arr, caps)
+		return discretize(arr, caps, n)
 	end
 	return dm
 end
