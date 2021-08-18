@@ -5,24 +5,48 @@ using Flux
 using Random
 using StableRNGs
 
-function run_exp(seed; total_eps=100)
+cartpole_lsm(ns, na, env, rng) = begin
+    env_param = LSM.LSMParams(ns*2,na,"cartpole")
+    LSM.LSM_Wrapper(env_param, rng)
+end
+
+cartpole_nn(ns, na, env, rng) = begin
+    Chain(
+        Dense(ns, 128, relu; init = glorot_uniform(rng)),
+        Dense(128, 128, relu; init = glorot_uniform(rng)),
+        Dense(128, na; init = glorot_uniform(rng)),
+    )
+end
+
+model_dict = Dict(
+    "LSM" => cartpole_lsm,
+    "NN" => cartpole_nn,
+    # "L-STDP" => () -> (println("to be implemented!");throw MethodError),
+    )
+
+opt_dict = Dict(
+    "ADAM" => ADAM(0.01),
+    "RMSPROP" => RMSProp(0.0002, 0.99),
+)
+
+function run_exp(seed, model_name::String="LSM"; total_eps=100)
     rng = StableRNG(seed)
     Random.seed!(seed)
 
     env = CartPoleEnv(; T = Float32, rng = rng)
     ns, na = length(state(env)), length(action_space(env))
 
-    env_param = LSM.LSMParams(ns*2,na,"cartpole")
-    cartpole_lsm = LSM.LSM_Wrapper(env_param, rng)
-    opt = RMSProp(0.0002, 0.99)
-    # opt = ADAM(0.01)
+    model = model_dict[model_name](ns, na, "cartpole", rng)
+
+    opt = opt_dict["RMSPROP"]
+
     total_steps = 1000
 
     policy = Agent(
         policy = QBasedPolicy(
             learner = BasicDQNLearner(
                 approximator = NeuralNetworkApproximator(
-                    model = cartpole_lsm |> cpu,
+                    model = model |> cpu,
                     optimizer = opt,
                 ),
                 batch_size = 32,

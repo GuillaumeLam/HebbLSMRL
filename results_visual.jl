@@ -7,9 +7,15 @@ using Plots; pyplot()
 results_path = "./results/"
 save_path = "./plots/"
 
+model_type = "NN"
+
 aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
 for file in readdir(results_path)
+    if !occursin(model_type, file)
+        continue
+    end
+
     v = readdlm(results_path*file)
 
     μ = vec(mean(v, dims=1))
@@ -18,7 +24,7 @@ for file in readdir(results_path)
 
     display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
     # display(Plots.plot([1:length(x̃);],x̃, color=:lightblue, ribbon=σ, label=false))
-    savefig(save_path*"avg$(file[(end-6):(end-4)])ep-reward")
+    savefig(save_path*"Q$(model_type)_avg$(file[(end-6):(end-4)])ep-reward")
 
     tmp_mean = mean(v,dims=2)
     # MEAN_μ = mean(tmp_mean)
@@ -68,4 +74,4 @@ for (i, (plot_title, dict)) in enumerate(aggr)
 end
 
 
-savefig(save_path*"QLSM_100vs500eps")
+savefig(save_path*"Q$(model_type)_100vs500eps")
