@@ -7,7 +7,7 @@ using StableRNGs
 
 cartpole_lsm(ns, na, env, rng) = begin
     env_param = LSM.LSMParams(ns*2,na,"cartpole")
-    LSM.LSM_Wrapper(env_param, rng, (x)->(LSM.genPositiveArr(LSM.genCappedArr(x,[2.5,0.5,0.28,0.88]))))
+    LSM.LSM_Wrapper(env_param, rng, (x)->(LSM.genPositive(LSM.genCapped(x,[2.5,0.5,0.28,0.88]))))
 end
 
 cartpole_lsm_discr(ns, na, env, rng) = begin

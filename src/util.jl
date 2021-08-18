@@ -41,7 +41,7 @@ function create_conn(val, avg_conn, ub, n)
     end
 end
 
-function genPositiveArr(arr::AbstractVector)
+function genPositive(arr::AbstractVector)
 	s = map(arr) do e
 		if e < 0
 			return [0, abs(e)]
@@ -53,7 +53,14 @@ function genPositiveArr(arr::AbstractVector)
 	return vcat(s...)
 end
 
-function genCappedArr(arr::AbstractVector, caps::AbstractVector)
+function genPositive(m::AbstractMatrix)
+	pm = mapslices(m, dims=1) do arr
+		return genPositive(arr)
+	end
+	return pm
+end
+
+function genCapped(arr::AbstractVector, caps::AbstractVector)
 	h = broadcast(arr, caps) do val, cap
 		if val <= -cap
 			return -cap
@@ -65,6 +72,13 @@ function genCappedArr(arr::AbstractVector, caps::AbstractVector)
 	end
 
 	return h
+end
+
+function genCapped(m::AbstractMatrix, caps::AbstractVector)
+	cm = mapslices(m, dims=1) do arr
+		return genCapped(arr, caps)
+	end
+	return cm
 end
 
 function discretize(arr::AbstractVector, caps::AbstractVector)
