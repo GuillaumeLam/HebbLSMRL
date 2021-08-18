@@ -1,30 +1,35 @@
 mutable struct LSM_Wrapper{N<:AbstractNetwork}
-    readout_model
+    readout
     reservoir::N
+    preprocessing::Function
 
     function (lsm::LSM_Wrapper)(x)
         h = Zygote.ignore() do
-            return lsm.reservoir(x)
+            x̃ = lsm.preprocessing(x)
+            return lsm.reservoir(x̃)
         end
-        z = lsm.readout_model(h)
+        z = lsm.readout(h)
         return z
     end
 
-    LSM_Wrapper(readout, res::N) where {N<:AbstractNetwork} =
-        new{N}(readout, res)
-
-    function LSM_Wrapper(params::P, rng::R) where {P<:LSMParams,R<:AbstractRNG}
-        reservoir = init_res(params, rng)
-        readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
-            Dense(rand(rng, params.n_out, params.res_out), rand(rng,params.n_out)))
-        return LSM_Wrapper(readout, reservoir)
-    end
-
-    function LSM_Wrapper(params::P, W, rng::R) where {P<:LSMParams,R<:AbstractRNG}
-        reservoir = init_res(params, rng)
-        return LSM_Wrapper(W, reservoir)
-    end
+    LSM_Wrapper(readout, res::N, func) where {N<:AbstractNetwork} =
+        new{N}(readout, res, func)
 end
+
+function LSM_Wrapper(params::P, rng::R, func) where {P<:LSMParams,R<:AbstractRNG}
+    reservoir = init_res(params, rng)
+    readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
+        Dense(rand(rng, params.n_out, params.res_out), rand(rng,params.n_out)))
+    return LSM_Wrapper(readout, reservoir, func)
+end
+
+function LSM_Wrapper(params::P, readout, rng::R, func) where {P<:LSMParams,R<:AbstractRNG}
+    reservoir = init_res(params, rng)
+    return LSM_Wrapper(readout, reservoir, func)
+end
+
+LSM_Wrapper(params::P, rng::R) where {P<:LSMParams,R<:AbstractRNG} = LSM_Wrapper(params, rng, identity)
+LSM_Wrapper(params::P, readout, rng::R) where {P<:LSMParams,R<:AbstractRNG} = LSM_Wrapper(params::P, readout, rng::R, identity)
 
 
 ###
@@ -32,7 +37,7 @@ end
 ###
 
 function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
-    poissonST = WaspNet.getPoissonST(genPositiveArr(genCappedArr(x,[2.5,0.5,0.28,0.88])), Distributions.Bernoulli)
+    poissonST = WaspNet.getPoissonST(x, Distributions.Bernoulli)
     sim = simulate!(net, poissonST, sim_τ, sim_T)
 
     idx = length(last(net.prev_outputs))-1
@@ -50,7 +55,7 @@ function (net::AbstractNetwork)(m::AbstractMatrix)
     return SliceMap.slicemap(net, m, dims=1)
 end
 
-Flux.trainable(lsm::LSM_Wrapper) = (lsm.readout_model,)
+Flux.trainable(lsm::LSM_Wrapper) = (lsm.readout,)
 
 CUDA.device(lsm::LSM_Wrapper) = Val(:cpu)
 

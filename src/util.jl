@@ -66,3 +66,35 @@ function genCappedArr(arr::AbstractVector, caps::AbstractVector)
 
 	return h
 end
+
+function discretize(arr::AbstractVector, caps::AbstractVector)
+	s = broadcast(arr,caps) do a, c
+		val = begin
+			if a <= -c
+				-c
+			elseif a >= c
+				c
+			else
+				a
+			end
+		end
+
+		rng = collect(-c:(2*c/10):c)
+
+		idx = searchsorted(rng,val).stop
+
+		v = zeros(11)
+		v[idx] = abs(rng[idx])
+
+		return v
+	end
+
+	return vcat(s...)
+end
+
+function discretize(m::AbstractMatrix, caps::AbstractVector)
+	dm = mapslices(m, dims=1) do arr
+		return discretize(arr, caps)
+	end
+	return dm
+end

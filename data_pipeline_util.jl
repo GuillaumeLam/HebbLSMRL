@@ -7,7 +7,12 @@ using StableRNGs
 
 cartpole_lsm(ns, na, env, rng) = begin
     env_param = LSM.LSMParams(ns*2,na,"cartpole")
-    LSM.LSM_Wrapper(env_param, rng)
+    LSM.LSM_Wrapper(env_param, rng, (x)->(LSM.genPositiveArr(LSM.genCappedArr(x,[2.5,0.5,0.28,0.88]))))
+end
+
+cartpole_lsm_discr(ns, na, env, rng) = begin
+    env_param = LSM.LSMParams(ns*11,na,"cartpole")
+    LSM.LSM_Wrapper(env_param, rng, (x)->LSM.discretize(x,[2.5,0.5,0.28,0.88]))
 end
 
 cartpole_nn(ns, na, env, rng) = begin
@@ -20,6 +25,7 @@ end
 
 model_dict = Dict(
     "LSM" => cartpole_lsm,
+    "DLSM" => cartpole_lsm_discr,
     "NN" => cartpole_nn,
     # "L-STDP" => () -> (println("to be implemented!");throw MethodError),
     )
