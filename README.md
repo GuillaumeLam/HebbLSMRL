@@ -35,3 +35,4 @@ WaspNet
 NOTE:
 -until all changes are added to WaspNet.jl, docker is on the backburner
 -to fetch plots & results simply run `(sudo) docker cp julia-docker:/app/plots ~/Downloads/plots`
+-to deploy simply run `(sudo) docker-compose up (--build for updated image)` 
