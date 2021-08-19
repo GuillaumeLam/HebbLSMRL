@@ -1,0 +1,10 @@
+version: '3'
+services:
+  julia-docker:
+    container_name: julia-docker
+    build: .
+    image: julia-docker:latest
+    command: bash -c "cd /app && julia main.jl"
+    # command: bash -c "julia /app/main.jl -m NN -e 100"
+    # ports:
+    #   - '7776:22'

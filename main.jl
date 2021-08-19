@@ -1,5 +1,6 @@
 using Pkg
 Pkg.activate(".")
+Pkg.instantiate()
 
 include("./util/arg.jl")
 include("./util/data_pipeline.jl")
