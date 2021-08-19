@@ -15,18 +15,23 @@ MVP:
     - [ ] Dont convert and use cnn
 - [x] make lsm (no stdp)
     - [x] WaspNet.jl
-    - [ ] Flux.jl
+    - [x] Flux.jl
 - [x] add train of last layers
 - [x] evaluate with RL
-- [ ] fix gradients
+- [x] fix gradients
 
 ADD-ONs:
 - [ ] more complex env
-- [ ] implement different input encoding methods
+- [x] implement different input encoding methods
 - [ ] add stdp
 - [ ] different architecture
 
 
 WaspNet
- - [x] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
-- [ ] add unit tests for inhiblif
+- [x] clean up for clean input of poisson neurons to input of sim (make it easier to change prob from sim to sim)
+- [x] add unit tests for inhiblif
+
+
+NOTE:
+-until all changes are added to WaspNet.jl, docker is on the backburner
+-to fetch plots & results simply run `(sudo) docker cp julia-docker:/app/plots ~/Downloads/plots`
