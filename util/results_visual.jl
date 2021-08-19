@@ -4,15 +4,15 @@ using StatsBase
 using StatsPlots
 using Plots; pyplot()
 
-results_path = "./results/"
-save_path = "./plots/"
+results_path = "../results/"
+save_path = "../plots/"
 
-model_type = "NN"
+model_type = "LSM"
 
 aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
 for file in readdir(results_path)
-    if !occursin(model_type, file)
+    if !occursin("Q"*model_type, file)
         continue
     end
 
@@ -20,11 +20,13 @@ for file in readdir(results_path)
 
     μ = vec(mean(v, dims=1))
     σ = vec(std(v, dims=1))
-    # x̃ = vec(median(v, dims=1))
+    x̃ = vec(median(v, dims=1))
 
     display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
-    # display(Plots.plot([1:length(x̃);],x̃, color=:lightblue, ribbon=σ, label=false))
     savefig(save_path*"Q$(model_type)_avg$(file[(end-6):(end-4)])ep-reward")
+
+    display(Plots.plot([1:length(x̃);],x̃, color=:lightblue, ribbon=σ, label=false))
+    savefig(save_path*"Q$(model_type)_med$(file[(end-6):(end-4)])ep-reward")
 
     tmp_mean = mean(v,dims=2)
     # MEAN_μ = mean(tmp_mean)

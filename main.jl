@@ -1,8 +1,8 @@
 using Pkg
 Pkg.activate(".")
 
-include("./arg.jl")
-include("./data_pipeline_util.jl")
+include("./util/arg.jl")
+include("./util/data_pipeline_util.jl")
 
 using DelimitedFiles
 

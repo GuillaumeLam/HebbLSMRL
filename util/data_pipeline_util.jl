@@ -1,4 +1,4 @@
-include("./src/lsm.jl")
+include("../src/lsm.jl")
 
 using ReinforcementLearning
 using Flux
@@ -47,7 +47,7 @@ function run_exp(seed, model_name::String="LSM"; total_eps=100)
 
     opt = opt_dict["RMSPROP"]
 
-    total_steps = 1000
+    total_steps = total_eps*100
 
     policy = Agent(
         policy = QBasedPolicy(
