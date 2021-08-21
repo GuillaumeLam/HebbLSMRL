@@ -5,18 +5,18 @@ using Flux
 using Random
 using StableRNGs
 
-cartpole_lsm(ns, na, env, rng) = begin
+cartpole_lsm(ns, na, rng) = begin
     env_param = LSM.LSMParams(ns*2,na,"cartpole")
     LSM.LSM_Wrapper(env_param, rng, (x)->(LSM.genPositive(LSM.genCapped(x,[2.5,0.5,0.28,0.88]))))
 end
 
-cartpole_lsm_discr(ns, na, env, rng) = begin
+cartpole_lsm_discr(ns, na, rng) = begin
     n = 10
     env_param = LSM.LSMParams(ns*(n+1),na,"cartpole")
     LSM.LSM_Wrapper(env_param, rng, (x)->LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
 end
 
-cartpole_nn(ns, na, env, rng) = begin
+cartpole_nn(ns, na, rng) = begin
     Chain(
         Dense(ns, 128, relu; init = glorot_uniform(rng)),
         Dense(128, 128, relu; init = glorot_uniform(rng)),
@@ -43,7 +43,7 @@ function run_exp(seed, model_name::String="LSM"; total_eps=100)
     env = CartPoleEnv(; T = Float32, rng = rng)
     ns, na = length(state(env)), length(action_space(env))
 
-    model = model_dict[model_name](ns, na, "cartpole", rng)
+    model = model_dict[model_name](ns, na, rng)
 
     opt = opt_dict["RMSPROP"]
 
