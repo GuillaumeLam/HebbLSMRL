@@ -4,10 +4,10 @@ using StatsBase
 using StatsPlots
 using Plots; pyplot()
 
-results_path = "../results/"
-save_path = "../plots/"
+results_path = "./results/"
+save_path = "./plots/"
 
-model_type = "LSM"
+model_type = "DLSM"
 
 aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
