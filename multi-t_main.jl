@@ -6,13 +6,20 @@ include("./util/arg.jl")
 include("./util/data_pipeline.jl")
 
 using DelimitedFiles
+using Random
 
-seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456 789789 012012]
+m_seed = 161803
+
+Random.seed!(m_seed)
+
+model_type, total_eps, n_sim = get_t_main_arg(get_Args())
+
+seeds = rand(000000:999999, Int(ceil(n_sim/Threads.nthreads())*Threads.nthreads()))
+# seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456 789789 012012]
 # seeds = [001993 109603 619089]
 
-model_type, total_eps = get_args()
-
-@info "Using $(Threads.nthreads()) threads"
+@info "Using $(Threads.nthreads()) threads for $(length(seeds)) seeds"
+@info "Seeds: $seeds"
 
 rewards = Vector{AbstractVector}(undef, Threads.nthreads())
 
