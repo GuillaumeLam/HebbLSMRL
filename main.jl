@@ -9,7 +9,7 @@ using DelimitedFiles
 
 seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456]
 
-model_type, total_eps = get_args()
+model_type, total_eps = get_main_arg(get_Args())
 
 for (j, total_ep) in enumerate(total_eps)
 	@info "Running each experiments for $total_ep episodes"
