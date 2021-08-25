@@ -11,7 +11,9 @@ using WaspNet
 using Zygote
 
 include("util.jl")
+include("spike_generator.jl")
 include("waspnet_ext.jl")
+
 
 
 export LSMParams, LSM_Wrapper

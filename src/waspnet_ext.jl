@@ -2,43 +2,46 @@ mutable struct LSM_Wrapper{N<:AbstractNetwork}
     readout
     reservoir::N
     preprocessing::Function
+    st_gen::SpikeTrainGenerator
 
     function (lsm::LSM_Wrapper)(x)
         h = Zygote.ignore() do
             x̃ = lsm.preprocessing(x)
-            return lsm.reservoir(x̃)
+            st = lsm.st_gen(x̃)
+            return lsm.reservoir(st)
         end
         z = lsm.readout(h)
         return z
     end
 
     LSM_Wrapper(readout, res::N, func) where {N<:AbstractNetwork} =
-        new{N}(readout, res, func)
+        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli))
+    LSM_Wrapper(readout, res::N, func, rng) where {N<:AbstractNetwork} =
+        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli, rng))
 end
 
 function LSM_Wrapper(params::P, rng::R, func) where {P<:LSMParams,R<:AbstractRNG}
     reservoir = init_res(params, rng)
     readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
-        Dense(rand(rng, params.n_out, params.res_out), rand(rng,params.n_out)))
-    return LSM_Wrapper(readout, reservoir, func)
+        Dense(rand(rng, params.n_out, params.res_out), rand(rng, params.n_out)))
+    return LSM_Wrapper(readout, reservoir, func, rng)
 end
 
 function LSM_Wrapper(params::P, readout, rng::R, func) where {P<:LSMParams,R<:AbstractRNG}
     reservoir = init_res(params, rng)
-    return LSM_Wrapper(readout, reservoir, func)
+    return LSM_Wrapper(readout, reservoir, func, rng)
 end
 
 LSM_Wrapper(params::P, rng::R) where {P<:LSMParams,R<:AbstractRNG} = LSM_Wrapper(params, rng, identity)
-LSM_Wrapper(params::P, readout, rng::R) where {P<:LSMParams,R<:AbstractRNG} = LSM_Wrapper(params::P, readout, rng::R, identity)
+LSM_Wrapper(params::P, readout, rng::R) where {P<:LSMParams,R<:AbstractRNG} = LSM_Wrapper(params::P, readout, rng, identity)
 
 
 ###
 # Overloaded functions
 ###
 
-function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
-    poissonST = WaspNet.getPoissonST(x, Distributions.Bernoulli)
-    sim = simulate!(net, poissonST, sim_τ, sim_T)
+function (net::AbstractNetwork)(spike_train_generator, sim_τ=0.001, sim_T=0.1)
+    sim = simulate!(net, spike_train_generator, sim_τ, sim_T)
 
     idx = length(last(net.prev_outputs))-1
 
@@ -52,7 +55,8 @@ function (net::AbstractNetwork)(x::AbstractVector,sim_τ=0.001, sim_T=0.1)
 end
 
 function (net::AbstractNetwork)(m::AbstractMatrix)
-    return SliceMap.slicemap(net, m, dims=1)
+    v = map(net, vec(m))
+    return hcat(v...)
 end
 
 Flux.trainable(lsm::LSM_Wrapper) = (lsm.readout,)
