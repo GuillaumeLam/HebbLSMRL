@@ -3,7 +3,6 @@ include("../src/lsm.jl")
 using ReinforcementLearning
 using Flux
 using Random
-using StableRNGs
 
 cartpole_lsm(ns, na, rng) = begin
     env_param = LSM.LSMParams(ns*2,na,"cartpole")
@@ -36,9 +35,9 @@ opt_dict = Dict(
     "RMSPROP" => RMSProp(0.0002, 0.99),
 )
 
-function run_exp(seed, model_name::String="LSM"; total_eps=100)
-    rng = StableRNG(seed)
-    Random.seed!(seed)
+function run_exp(rng, model_name::String="LSM"; total_eps=100)
+    # rng = StableRNG(seed)
+    # Random.seed!(seed)
 
     env = CartPoleEnv(; T = Float32, rng = rng)
     ns, na = length(state(env)), length(action_space(env))
@@ -64,7 +63,7 @@ function run_exp(seed, model_name::String="LSM"; total_eps=100)
             explorer = EpsilonGreedyExplorer(
                 kind = :exp,
                 ϵ_stable = 0.001,
-                decay_steps = 100,
+                decay_steps = Int64(0.1*total_steps),
                 rng = rng,
             ),
         ),
@@ -79,6 +78,8 @@ function run_exp(seed, model_name::String="LSM"; total_eps=100)
     hook = TotalRewardPerEpisode()
 
     run(policy, env, stop_condition, hook)
+
+    # println(model.readout.layers[1].W)
 
     return hook.rewards
 end
