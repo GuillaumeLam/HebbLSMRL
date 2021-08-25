@@ -17,16 +17,17 @@ for file in readdir(results_path)
     end
 
     v = readdlm(results_path*file)
+    n_eps = size(v)[2]
 
     μ = vec(mean(v, dims=1))
     σ = vec(std(v, dims=1))
     x̃ = vec(median(v, dims=1))
 
     display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
-    savefig(save_path*"Q$(model_type)_avg$(file[(end-6):(end-4)])ep-reward")
+    savefig(save_path*"Q$(model_type)_avg$(n_eps)ep-reward")
 
     display(Plots.plot([1:length(x̃);],x̃, color=:lightblue, ribbon=σ, label=false))
-    savefig(save_path*"Q$(model_type)_med$(file[(end-6):(end-4)])ep-reward")
+    savefig(save_path*"Q$(model_type)_med$(n_eps)ep-reward")
 
     tmp_mean = mean(v,dims=2)
     # MEAN_μ = mean(tmp_mean)
@@ -45,10 +46,10 @@ for file in readdir(results_path)
     # OG_μ = mean(tmp_og)
     # OG_σ = std(tmp_og)
 
-    aggr["Mean"][file[(end-6):(end-4)]] = tmp_mean
-    aggr["IQM"][file[(end-6):(end-4)]] = tmp_iq
-    aggr["MEDIAN"][file[(end-6):(end-4)]] = tmp_med
-    aggr["OG"][file[(end-6):(end-4)]] = tmp_og
+    aggr["Mean"][n_eps] = tmp_mean
+    aggr["IQM"][n_eps] = tmp_iq
+    aggr["MEDIAN"][n_eps] = tmp_med
+    aggr["OG"][n_eps] = tmp_og
 end
 
 function dict_flatten(dict::Dict)
@@ -76,4 +77,4 @@ for (i, (plot_title, dict)) in enumerate(aggr)
 end
 
 
-savefig(save_path*"Q$(model_type)_100vs500eps")
+savefig(save_path*"Q$(model_type)_100vs500vs1000eps")
