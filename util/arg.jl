@@ -5,7 +5,7 @@ mutable struct Args
 	total_eps
 	num_of_simulations
 
-	Args() = new("LSM",[100 500],1)
+	Args() = new("LSM", [100 500 1000 10_000] ,1)
 
 	function (a::Args)(param, val)
 		try
@@ -48,7 +48,9 @@ function get_Args()
 	args = Args()
 	parsed_args = parse_commandline()
 	for (arg,val) in parsed_args
-		args(arg, val)
+		if val != nothing
+			args(arg, val)
+		end
 	end
 	return args
 end
