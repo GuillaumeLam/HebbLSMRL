@@ -7,7 +7,7 @@ using Plots; pyplot()
 results_path = "./results/"
 save_path = "./plots/"
 
-model_type = "DLSM"
+model_type = "NN"
 
 aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
@@ -46,10 +46,12 @@ for file in readdir(results_path)
     # OG_μ = mean(tmp_og)
     # OG_σ = std(tmp_og)
 
-    aggr["Mean"][n_eps] = tmp_mean
-    aggr["IQM"][n_eps] = tmp_iq
-    aggr["MEDIAN"][n_eps] = tmp_med
-    aggr["OG"][n_eps] = tmp_og
+    padded_n_eps = lpad.(string(n_eps), 5)
+
+    aggr["Mean"][padded_n_eps] = tmp_mean
+    aggr["IQM"][padded_n_eps] = tmp_iq
+    aggr["MEDIAN"][padded_n_eps] = tmp_med
+    aggr["OG"][padded_n_eps] = tmp_og
 end
 
 function dict_flatten(dict::Dict)
@@ -64,7 +66,6 @@ function dict_flatten(dict::Dict)
     return ks, vs
 end
 
-
 colors = distinguishable_colors(4, RGB(0.3,0.3,0.4))
 plot(layout=(2,2))
 
@@ -76,5 +77,6 @@ for (i, (plot_title, dict)) in enumerate(aggr)
     end
 end
 
+#figure out groupedboxplot
 
-savefig(save_path*"Q$(model_type)_100vs500vs1000eps")
+savefig(save_path*"Q$(model_type)_100vs500vs1000vs10k-eps")

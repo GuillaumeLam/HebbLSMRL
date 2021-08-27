@@ -55,7 +55,7 @@ function run_exp(rng, model_name::String="LSM"; total_eps=100)
                     model = model |> cpu,
                     optimizer = opt,
                 ),
-                batch_size = 32,
+                batch_size = 1,
                 min_replay_history = Int64(0.1*total_steps),
                 loss_func = Flux.mse,
                 rng = rng,
