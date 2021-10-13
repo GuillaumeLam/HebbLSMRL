@@ -7,7 +7,7 @@ using Plots; pyplot()
 results_path = "./results/"
 save_path = "./plots/"
 
-model_type = "NN"
+model_type = "DLSM"
 
 aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
