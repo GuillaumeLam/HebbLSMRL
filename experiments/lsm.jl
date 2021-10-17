@@ -85,7 +85,7 @@ function train(network::AbstractNetwork, x, y, opt)
 end
 
 
-struct LSMParams{I<:Real, F<:Real}
+struct LSM_Params{I<:Real, F<:Real}
     n_in::I
     res_in::I
 
@@ -104,24 +104,24 @@ struct LSMParams{I<:Real, F<:Real}
     IE_UB::F
     II_UB::F
 
-    LSMParams(
+    LSM_Params(
         n_in::I,res_in::I,ne::I,ni::I,res_out::I,n_out::I,K::I,C::I,
         PE_UB::F,EE_UB::F,EI_UB::F,IE_UB::F,II_UB::F
         ) where {I<:Real,F<:Real} = new{I,F}(n_in,res_in,ne,ni,res_out,n_out,K,C,PE_UB,EE_UB,EI_UB,IE_UB,II_UB)
 
-    LSMParams(
+    LSM_Params(
             n_in::I,res_in::I,ne::I,ni::I,res_out::I,n_out::I,K::I,C::I
-            ) where {I<:Number} = LSMParams(n_in,res_in,ne,ni,res_out,n_out,K,C,0.6,0.005,0.25,0.3,0.01)
+            ) where {I<:Number} = LSM_Params(n_in,res_in,ne,ni,res_out,n_out,K,C,0.6,0.005,0.25,0.3,0.01)
 
-    LSMParams(n_in::I, n_out::I, env::String) where {I<:Real} = (
+    LSM_Params(n_in::I, n_out::I, env::String) where {I<:Real} = (
         if env == "cartpole"
-            return LSMParams(n_in,10,120,30,10,n_out,5,1)
+            return LSM_Params(n_in,10,120,30,10,n_out,5,1)
         end
     )
 end
 
 
-function res(params::LSMParams, seed::Number)
+function res(params::LSM_Params, seed::Number)
     in_n = [WaspNet.LIF() for _ in 1:params.res_in]
     in_w = randn(MersenneTwister(seed), params.res_in, params.n_in)
     in_w = sparse(in_w)
@@ -172,7 +172,7 @@ opt = Descent(0.1)
 
 x, y = rand(4), rand(2)
 
-cartpole_param = LSMParams(8,2,"cartpole")
+cartpole_param = LSM_Params(8,2,"cartpole")
 
 lsm = res(cartpole_param,seed)
 
@@ -191,7 +191,7 @@ rng = StableRNG(seed)
 env = CartPoleEnv(; T = Float32, rng = rng)
 ns, na = length(state(env)), length(action_space(env))
 
-env_params = LSMParams(ns*2,na,"cartpole")
+env_params = LSM_Params(ns*2,na,"cartpole")
 cartpole_lsm = res(env_params, seed)
 
 policy = Agent(

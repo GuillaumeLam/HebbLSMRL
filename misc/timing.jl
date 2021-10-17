@@ -3,7 +3,7 @@ using StableRNGs
 
 include("./data_pipeline.jl")
 
-lsm = model_dict["LSM"](4,2,StableRNG(123))
+lsm = model_dict["RL_LSM"](4,2,StableRNG(123))
 
 x = rand(4)
 
@@ -36,7 +36,7 @@ using LinearAlgebra
 # end
 
 
-using .LSM
+using .RL_LSM
 using Random
 using SparseArrays
 
@@ -45,10 +45,10 @@ using WaspNet
 Random.seed!(123)
 
 
-params = LSMParams(8,2,"cartpole")
+params = LSM_Params(8,2,"cartpole")
 rng = StableRNG(123)
 
-# function init_res(params::LSMParams, rng::AbstractRNG)
+# function init_res(params::LSM_Params, rng::AbstractRNG)
 
 
 lif_params = Float32.((20., 10., 0.5, 0., 0., 0., 0.))
@@ -64,11 +64,11 @@ in_l = Layer(in_n, in_w, type=Float32)
 res_n = Vector{AbstractNeuron}([WaspNet.LIF(lif_params...) for _ in 1:params.ne])
 append!(res_n, [WaspNet.InhibNeuron(WaspNet.LIF(lif_params...)) for _ in 1:params.ni])
 
-W_in = cat(LSM.create_conn.(rand(rng, params.res_in, params.ne),params.K,params.PE_UB,params.res_in), zeros(params.res_in,params.ni), dims=2)'
+W_in = cat(RL_LSM.create_conn.(rand(rng, params.res_in, params.ne),params.K,params.PE_UB,params.res_in), zeros(params.res_in,params.ni), dims=2)'
 W_in = SparseArrays.sparse(Float32.(W_in))
 
-W_EI = LSM.create_conn.(rand(rng, params.ne,params.ni), params.C, params.EI_UB, params.ne)
-W_IE = LSM.create_conn.(rand(rng, params.ni,params.ne), params.C, params.IE_UB, params.ne)
+W_EI = RL_LSM.create_conn.(rand(rng, params.ne,params.ni), params.C, params.EI_UB, params.ne)
+W_IE = RL_LSM.create_conn.(rand(rng, params.ni,params.ne), params.C, params.IE_UB, params.ne)
 W_EE = W_EI*W_IE
 W_EE[diagind(W_EE)] .= 0.
 W_II = W_IE*W_EI

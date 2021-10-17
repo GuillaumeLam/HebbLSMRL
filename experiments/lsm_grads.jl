@@ -7,7 +7,7 @@ using Zygote
 
 seed = 123
 
-function train(network::LSM.LSM_Wrapper, x, y, opt)
+function train(network::RL_LSM.LSM, x, y, opt)
     println("Training")
 
     println("Initial Prediction")
@@ -35,8 +35,8 @@ opt = Descent(0.1)
 
 rng = Random.seed!(seed)
 X, Y = rand(rng, 4), rand(rng, 2)
-cartpole_param = LSM.LSMParams(8,2,"cartpole")
-lsm = LSM.LSM_Wrapper(cartpole_param, rng)
+cartpole_param = RL_LSM.LSM_Params(8,2,"cartpole")
+lsm = RL_LSM.LSM(cartpole_param, rng)
 
 lsm(X)
 

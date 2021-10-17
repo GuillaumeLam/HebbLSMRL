@@ -19,5 +19,5 @@ function plot_eigen_spec(m)
       plot!(circShape(0,0,1), seriestype=[:shape,], lw = 0.5,c=:green,legend=false,fillalpha=0.2,aspect_ration=1)
 end
 
-lsm = model_dict["LSM"](4,2,"cartpole",StableRNG(123))
+lsm = model_dict["RL_LSM"](4,2,"cartpole",StableRNG(123))
 plot_eigen_spec(lsm.reservoir.layers[2].W[2])

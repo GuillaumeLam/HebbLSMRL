@@ -128,7 +128,7 @@ for i in 1:5:40
     display(plot(sim.states[i:i+4,:]', layout = (5, 1)))
 end
 
-function LSM(NE::AbstractNeuron, NI::AbstractNeuron)
+function RL_LSM(NE::AbstractNeuron, NI::AbstractNeuron)
 
 end
 

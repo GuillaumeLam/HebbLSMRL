@@ -5,14 +5,14 @@ using Flux
 using Random
 
 cartpole_lsm(ns, na, rng) = begin
-    env_param = LSM.LSMParams(ns*2,na,"cartpole")
-    LSM.LSM_Wrapper(env_param, rng, (x)->(LSM.genPositive(LSM.genCapped(x,[2.5,0.5,0.28,0.88]))))
+    env_param = RL_LSM.LSM_Params(ns*2,na,"cartpole")
+    RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))))
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
     n = 10
-    env_param = LSM.LSMParams(ns*(n+1),na,"cartpole")
-    LSM.LSM_Wrapper(env_param, rng, (x)->LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
+    env_param = RL_LSM.LSM_Params(ns*(n+1),na,"cartpole")
+    RL_LSM.LSM(env_param, rng, (x)->RL_LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
 end
 
 cartpole_nn(ns, na, rng) = begin
@@ -24,8 +24,8 @@ cartpole_nn(ns, na, rng) = begin
 end
 
 model_dict = Dict(
-    "LSM" => cartpole_lsm,
-    "DLSM" => cartpole_lsm_discr,
+    "RL_LSM" => cartpole_lsm,
+    "DRL_LSM" => cartpole_lsm_discr,
     "NN" => cartpole_nn,
     # "L-STDP" => () -> (println("to be implemented!");throw MethodError),
     )
@@ -35,7 +35,17 @@ opt_dict = Dict(
     "RMSPROP" => RMSProp(0.0002, 0.99),
 )
 
-function run_exp(rng, model_name::String="LSM"; total_eps=100)
+#=
+    make dict of td method for rl
+
+rl_dict = Dict(
+    "QL" =>
+    "AC" =>
+)
+
+=#
+
+function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=false)
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
@@ -77,7 +87,7 @@ function run_exp(rng, model_name::String="LSM"; total_eps=100)
     stop_condition = StopAfterEpisode(total_eps, is_show_progress=!haskey(ENV, "CI"))
     hook = TotalRewardPerEpisode()
 
-    run(policy, env, stop_condition, hook)
+    run(RandomPolicy(action_space(env)), env, stop_condition, hook)
 
     # println(model.readout.layers[1].W)
 
