@@ -1,4 +1,4 @@
-include("../src/lsm.jl")
+include("../src/rl_lsm.jl")
 
 using ReinforcementLearning
 using Flux
@@ -6,7 +6,7 @@ using Random
 
 cartpole_lsm(ns, na, rng) = begin
     env_param = RL_LSM.LSM_Params(ns*2,na,"cartpole")
-    RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))))
+    RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
@@ -31,7 +31,7 @@ model_dict = Dict(
     )
 
 opt_dict = Dict(
-    "ADAM" => ADAM(0.01),
+    "ADAM" => ADAM(0.01), #ADAM(1e-3)
     "RMSPROP" => RMSProp(0.0002, 0.99),
 )
 
@@ -45,7 +45,7 @@ rl_dict = Dict(
 
 =#
 
-function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=false)
+function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
@@ -58,7 +58,11 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=false)
 
     total_steps = total_eps*100
 
-    policy = Agent(
+    UPDATE_FREQ = 10
+
+    rand_agent = RandomPolicy(action_space(env))
+
+    Q_agent = Agent(
         policy = QBasedPolicy(
             learner = BasicDQNLearner(
                 approximator = NeuralNetworkApproximator(
@@ -83,13 +87,40 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=false)
         ),
     )
 
+    A2C_agent = Agent(
+        policy = QBasedPolicy(
+            learner = A2CLearner(
+                approximator = ActorCritic(
+                    actor = model,
+                    critic = cartpole_lsm_discr(ns, 1, rng),
+                    optimizer = opt,
+                ) |> cpu,
+                γ = 0.99f0,
+                actor_loss_weight = 1.0f0,
+                critic_loss_weight = 0.5f0,
+                entropy_loss_weight = 0.001f0,
+                update_freq = UPDATE_FREQ,
+            ),
+            explorer = BatchExplorer(GumbelSoftmaxExplorer()),
+        ),
+        trajectory = CircularArraySARTTrajectory(;
+            capacity = UPDATE_FREQ,
+            state = Vector{Float32} => (ns,),
+        ),
+    )
+
+
     # stop_condition = StopAfterStep(total_steps, is_show_progress=!haskey(ENV, "CI"))
     stop_condition = StopAfterEpisode(total_eps, is_show_progress=!haskey(ENV, "CI"))
     hook = TotalRewardPerEpisode()
 
-    run(RandomPolicy(action_space(env)), env, stop_condition, hook)
+    run(Q_agent, env, stop_condition, hook)
 
     # println(model.readout.layers[1].W)
+
+    # fetch exp run states
+
+    println(Q_agent.policy.learner.approximator.model.states_dict)
 
     return hook.rewards
 end

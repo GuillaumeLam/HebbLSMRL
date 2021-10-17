@@ -12,9 +12,7 @@ using Zygote
 
 include("util.jl")
 include("spike_generator.jl")
-include("lsm-wrapper.jl")
-
-
+include("lsm.jl")
 
 export LSM_Params, LSM
 

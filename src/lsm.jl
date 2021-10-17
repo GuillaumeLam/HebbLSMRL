@@ -4,27 +4,48 @@ mutable struct LSM{N<:AbstractNetwork}
     preprocessing::Function
     st_gen::SpikeTrainGenerator
 
+    states_dict
+
+    # env_states
+    # out_states
+
     function (lsm::LSM)(x)
+        Zygote.ignore() do
+            if !isnothing(lsm.states_dict)
+                append!(lsm.states_dict["env"], x)
+            end
+        end
+
         h = Zygote.ignore() do
             x̃ = lsm.preprocessing(x)
             st = lsm.st_gen(x̃)
             return lsm.reservoir(st)
         end
+
         z = lsm.readout(h)
+
+        Zygote.ignore() do
+            if !isnothing(lsm.states_dict)
+                append!(lsm.states_dict["out"], x)
+            end
+        end
+
         return z
     end
 
+
+
     LSM(readout, res::N, func; visual=false) where {N<:AbstractNetwork} =
-        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli; visual))
+        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli), visual ? nothing : Dict("env"=>[], "out"=>[]))
     LSM(readout, res::N, func, rng; visual=false) where {N<:AbstractNetwork} =
-        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli, rng; visual))
+        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli, rng), visual ? nothing : Dict("env"=>[], "out"=>[]))
 end
 
-function LSM(params::P, rng::R, func) where {P<:LSM_Params,R<:AbstractRNG}
+function LSM(params::P, rng::R, func; visual=false) where {P<:LSM_Params,R<:AbstractRNG}
     reservoir = init_res(params, rng)
     readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
         Dense(rand(rng, params.n_out, params.res_out), rand(rng, params.n_out)))
-    return LSM(readout, reservoir, func, rng)
+    return LSM(readout, reservoir, func, rng; visual=visual)
 end
 
 function LSM(params::P, readout, rng::R, func) where {P<:LSM_Params,R<:AbstractRNG}
@@ -43,7 +64,7 @@ LSM(params::P, readout, rng::R) where {P<:LSM_Params,R<:AbstractRNG} = LSM(param
 function (net::AbstractNetwork)(spike_train_generator, sim_τ=0.001, sim_T=0.1)
     sim = simulate!(net, spike_train_generator, sim_τ, sim_T)
 
-    println(sim)
+    # println(sim) => when res is learning, showing raster will be worth
 
     idx = length(last(net.prev_outputs))-1
 

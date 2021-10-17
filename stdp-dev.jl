@@ -5,9 +5,11 @@ Pkg.instantiate()
 using StableRNGs
 seeds = [809669]
 
-include("./rl-rc/data_pipeline.jl")
+include("./misc/experiments.jl")
 
-model_type, total_eps = "RL_LSM", 100
+# using RL_LSM
+
+model_type, total_eps = "RL_LSM", 50
 
 for (j, total_ep) in enumerate(total_eps)
 	# @info "Running each experiments for $total_ep episodes"

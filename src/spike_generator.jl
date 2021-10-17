@@ -4,19 +4,11 @@ mutable struct SpikeTrainGenerator
     sample
     rng
 
-    env_states
-
-    SpikeTrainGenerator(d; visual=false) =
-        new(d,[],nothing, visual ? [] : nothing)
-    SpikeTrainGenerator(d, rng; visual=false) =
-        new(d,[],rng, visual ? [] : nothing)
+    SpikeTrainGenerator(d; visual=false) = new(d,[],nothing)
+    SpikeTrainGenerator(d, rng; visual=false) = new(d,[],rng)
 end
 
 function (stg::SpikeTrainGenerator)(x::AbstractVector)
-
-    if !isnothing(stg.env_states)
-        append!(stg.env_states, x)
-    end
 
     if all(x.==0)
         ds = product_distribution(stg.d.(x))
