@@ -6,17 +6,17 @@ using Random
 
 cartpole_lsm(ns, na, rng) = begin
     env_param = RL_LSM.LSM_Params(ns*2,na,"cartpole")
-    RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
+    return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
     n = 10
     env_param = RL_LSM.LSM_Params(ns*(n+1),na,"cartpole")
-    RL_LSM.LSM(env_param, rng, (x)->RL_LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
+    return RL_LSM.LSM(env_param, rng, (x)->RL_LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
 end
 
 cartpole_nn(ns, na, rng) = begin
-    Chain(
+    return Chain(
         Dense(ns, 128, relu; init = glorot_uniform(rng)),
         Dense(128, 128, relu; init = glorot_uniform(rng)),
         Dense(128, na; init = glorot_uniform(rng)),
@@ -31,7 +31,7 @@ model_dict = Dict(
     )
 
 opt_dict = Dict(
-    "ADAM" => ADAM(0.01), #ADAM(1e-3)
+    "ADAM" => ADAM(1e-3), #ADAM(1e-3)
     "RMSPROP" => RMSProp(0.0002, 0.99),
 )
 
@@ -87,6 +87,7 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
         ),
     )
 
+    #=
     A2C_agent = Agent(
         policy = QBasedPolicy(
             learner = A2CLearner(
@@ -108,6 +109,7 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
             state = Vector{Float32} => (ns,),
         ),
     )
+    =#
 
 
     # stop_condition = StopAfterStep(total_steps, is_show_progress=!haskey(ENV, "CI"))
@@ -115,12 +117,17 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
     hook = TotalRewardPerEpisode()
 
     run(Q_agent, env, stop_condition, hook)
-
     # println(model.readout.layers[1].W)
 
     # fetch exp run states
+    # println(Q_agent.policy.learner.approximator.model.states_dict) # => returning nothing for some reason
 
-    println(Q_agent.policy.learner.approximator.model.states_dict)
+    frames = Q_agent.policy.learner.approximator.model.states_dict
 
-    return hook.rewards
+    println(size(frames["env"]))
+    println(size(frames["out"]))
+    println(size(frames["spike"]))
+    println(size(frames["spike"][1]))
+
+    return hook.rewards, frames
 end

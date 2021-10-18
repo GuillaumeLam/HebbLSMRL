@@ -6,44 +6,65 @@ mutable struct LSM{N<:AbstractNetwork}
 
     states_dict
 
-    # env_states
-    # out_states
-
     function (lsm::LSM)(x)
         Zygote.ignore() do
             if !isnothing(lsm.states_dict)
-                append!(lsm.states_dict["env"], x)
+                lsm.states_dict["env"]=[lsm.states_dict["env"];x'] # x -> dim (4,)
             end
+
         end
 
         h = Zygote.ignore() do
             x̃ = lsm.preprocessing(x)
             st = lsm.st_gen(x̃)
-            return lsm.reservoir(st)
+            return lsm.reservoir(st; visual=lsm.states_dict)
         end
 
         z = lsm.readout(h)
 
         Zygote.ignore() do
             if !isnothing(lsm.states_dict)
-                append!(lsm.states_dict["out"], x)
+                lsm.states_dict["out"]=[lsm.states_dict["out"];z'] # z -> dim (2,)
             end
         end
 
         return z
     end
 
+    LSM(readout, res::N, func; visual) where {N<:AbstractNetwork} =
+        new{N}(
+            readout,
+            res,
+            func,
+            SpikeTrainGenerator(Distributions.Bernoulli),
+            visual ?
+                Dict(
+                    "env"=>Array{Float64}(undef, 0, 4),
+                    "out"=>Array{Float64}(undef, 0, 2),
+                    "spike"=>Vector{Float64}(undef, 0)
+                ) :
+                nothing
+        )
 
-
-    LSM(readout, res::N, func; visual=false) where {N<:AbstractNetwork} =
-        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli), visual ? nothing : Dict("env"=>[], "out"=>[]))
-    LSM(readout, res::N, func, rng; visual=false) where {N<:AbstractNetwork} =
-        new{N}(readout, res, func, SpikeTrainGenerator(Distributions.Bernoulli, rng), visual ? nothing : Dict("env"=>[], "out"=>[]))
+    LSM(readout, res::N, func, rng; visual) where {N<:AbstractNetwork} =
+        new{N}(
+            readout,
+            res,
+            func,
+            SpikeTrainGenerator(Distributions.Bernoulli, rng),
+            visual ?
+                Dict(
+                    "env"=>Array{Float64}(undef, 0, 4),
+                    "out"=>Array{Float64}(undef, 0, 2),
+                    "spike"=>[]
+                ) :
+                nothing
+        )
 end
 
 function LSM(params::P, rng::R, func; visual=false) where {P<:LSM_Params,R<:AbstractRNG}
     reservoir = init_res(params, rng)
-    readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out) ,relu),
+    readout = Chain(Dense(rand(rng,params.res_out, params.ne), rand(rng, params.res_out), relu),
         Dense(rand(rng, params.n_out, params.res_out), rand(rng, params.n_out)))
     return LSM(readout, reservoir, func, rng; visual=visual)
 end
@@ -61,12 +82,18 @@ LSM(params::P, readout, rng::R) where {P<:LSM_Params,R<:AbstractRNG} = LSM(param
 # Overloaded functions
 ###
 
-function (net::AbstractNetwork)(spike_train_generator, sim_τ=0.001, sim_T=0.1)
-    sim = simulate!(net, spike_train_generator, sim_τ, sim_T)
+function (res::AbstractNetwork)(spike_train_generator, sim_τ=0.001, sim_T=0.1; visual)
+    sim = simulate!(res, spike_train_generator, sim_τ, sim_T)
 
     # println(sim) => when res is learning, showing raster will be worth
+    # println(size(sim.outputs)) # -> dim (182,101)
+    # println(size(sim.times))
 
-    idx = length(last(net.prev_outputs))-1
+    if !isnothing(visual)
+        visual["spike"] = cat(visual["spike"], [sim.outputs], dims=1)
+    end
+
+    idx = length(last(res.prev_outputs))-1
 
     output_smmd = sum(sim.outputs[end-idx:end-Int(0.2*(idx+1)),:],dims=2)
 
@@ -77,8 +104,8 @@ function (net::AbstractNetwork)(spike_train_generator, sim_τ=0.001, sim_T=0.1)
     end
 end
 
-function (net::AbstractNetwork)(m::AbstractMatrix)
-    v = map(net, vec(m))
+function (res::AbstractNetwork)(m::AbstractMatrix; visual)
+    v = map(x -> res(x; visual=visual), vec(m))
     return hcat(v...)
 end
 
@@ -127,7 +154,7 @@ function init_res(params::LSM_Params, rng::AbstractRNG)
 
     res = Layer(res_n, res_w, conns)
 
-    net = Network([in_l, res], params.n_in)
+    res = Network([in_l, res], params.n_in)
 
-    return net
+    return res
 end
