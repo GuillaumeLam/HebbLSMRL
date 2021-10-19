@@ -6,7 +6,8 @@ using Random
 
 cartpole_lsm(ns, na, rng) = begin
     env_param = RL_LSM.LSM_Params(ns*2,na,"cartpole")
-    return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
+    return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(x)); visual=true)
+    # return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
@@ -124,10 +125,10 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
 
     frames = Q_agent.policy.learner.approximator.model.states_dict
 
-    println(size(frames["env"]))
-    println(size(frames["out"]))
-    println(size(frames["spike"]))
-    println(size(frames["spike"][1]))
+    # println(size(frames["env"]))
+    # println(size(frames["out"]))
+    # println(size(frames["spike"]))
+    # println(size(frames["spike"][1]))
 
     return hook.rewards, frames
 end
