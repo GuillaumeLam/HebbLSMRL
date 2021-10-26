@@ -83,7 +83,8 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
             ),
         ),
         trajectory = CircularArraySARTTrajectory(
-            capacity = Int64(0.1*total_steps),
+            capacity = UPDATE_FREQ,
+            # capacity = Int64(0.1*total_steps),
             state = Vector{Float32} => (ns,),
         ),
     )
