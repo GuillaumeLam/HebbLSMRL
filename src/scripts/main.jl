@@ -1,8 +1,8 @@
-using Pkg
-Pkg.activate(".")
-Pkg.instantiate()
+# using Pkg
+# Pkg.activate(".")
+# Pkg.instantiate()
 
-include("./rl-rc/arg.jl")
+include("../arg.jl")
 # include("./rl-rc/data_pipeline.jl")
 
 using DelimitedFiles

@@ -1,19 +1,19 @@
-include("../src/rl_lsm.jl")
-
 using ReinforcementLearning
 using Flux
 using Random
 
+using LiquidStateMachine
+
 cartpole_lsm(ns, na, rng) = begin
-    env_param = RL_LSM.LSM_Params(ns*2,na,"cartpole")
-    return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(x)); visual=true)
-    # return RL_LSM.LSM(env_param, rng, (x)->(RL_LSM.genPositive(RL_LSM.genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
+    env_param = LSM_Params(ns*2,na,"cartpole")
+    return LSM(env_param, rng, (x)->(genPositive(x)); visual=true)
+    # return LSM(env_param, rng, (x)->(genPositive(genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
     n = 10
-    env_param = RL_LSM.LSM_Params(ns*(n+1),na,"cartpole")
-    return RL_LSM.LSM(env_param, rng, (x)->RL_LSM.discretize(x,[2.5,0.5,0.28,0.88], n))
+    env_param = LSM_Params(ns*(n+1),na,"cartpole")
+    return LSM(env_param, rng, (x)->discretize(x,[2.5,0.5,0.28,0.88], n))
 end
 
 cartpole_nn(ns, na, rng) = begin
