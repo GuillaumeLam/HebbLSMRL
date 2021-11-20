@@ -1,4 +1,4 @@
-module Hebbian-LSM-RL
+module HebbLSMRL
 
 using ArgParse
 using DelimitedFiles
@@ -13,5 +13,7 @@ include("experiments.jl")
 include("res_analysis.jl")
 include("results_visual.jl")
 include("timing.jl")
+
+export run_exp
 
 end # module
