@@ -6,14 +6,14 @@ using LiquidStateMachine
 
 cartpole_lsm(ns, na, rng) = begin
     env_param = LSM_Params(ns*2,na,"cartpole")
-    return LSM(env_param, rng, (x)->(genPositive(x)); visual=true)
+    return LSM(env_param, (x)->(genPositive(x)), rng=rng, visual=true)
     # return LSM(env_param, rng, (x)->(genPositive(genCapped(x,[2.5,0.5,0.28,0.88]))); visual=true)
 end
 
 cartpole_lsm_discr(ns, na, rng) = begin
     n = 10
     env_param = LSM_Params(ns*(n+1),na,"cartpole")
-    return LSM(env_param, rng, (x)->discretize(x,[2.5,0.5,0.28,0.88], n))
+    return LSM(env_param, (x)->discretize(x,[2.5,0.5,0.28,0.88], n), rng=rng)
 end
 
 cartpole_nn(ns, na, rng) = begin
