@@ -46,7 +46,7 @@ rl_dict = Dict(
 
 =#
 
-function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
+function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=nothing)
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
@@ -124,12 +124,14 @@ function run_exp(rng, model_name::String="RL_LSM"; total_eps=100)
     # fetch exp run states
     # println(Q_agent.policy.learner.approximator.model.states_dict) # => returning nothing for some reason
 
-    frames = Q_agent.policy.learner.approximator.model.states_dict
-
+    if !isnothing(visual) && isa(visual, Vector{AbstractDict})
+        frames = Q_agent.policy.learner.approximator.model.states_dict
+        push!(visual, frames)
+    end
     # println(size(frames["env"]))
     # println(size(frames["out"]))
     # println(size(frames["spike"]))
     # println(size(frames["spike"][1]))
 
-    return hook.rewards, frames
+    return hook.rewards
 end

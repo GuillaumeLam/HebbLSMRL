@@ -15,13 +15,16 @@ seeds = [809669, 689741]
 
 model_type, total_eps = get_main_arg(get_Args())
 
+visual = Vector{AbstractDict}()
+
 for (j, total_ep) in enumerate(total_eps)
 	@info "Running each experiments for $total_ep episodes"
 	for (i, seed) in enumerate(seeds)
 		@info "Starting experiment $i"
-		reward = run_exp(StableRNG(seed), model_type; total_eps=total_ep)
+		reward = run_exp(StableRNG(seed), model_type; total_eps=total_ep, visual=visual)
 		@info "Completed $(i/length(seeds)*100)% of experiments of $total_ep episodes"
 		io = open("../results/Q$model_type-total_ep=$total_ep.txt", "a") do io
+			println(typeof(reward))
 			writedlm(io, reward')
 			@info "Logged run!"
 		end
