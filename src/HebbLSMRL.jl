@@ -8,15 +8,18 @@ using Random
 using ReinforcementLearning
 using StableRNGs
 using Statistics
+using StatsBase
+using StatsPlots
+using Plots
+using PyPlot
 
 include("arg.jl")
-
 export get_main_arg, get_t_main_arg, get_Args
 
 include("experiments.jl")
-include("results_visual.jl")
-include("timing.jl")
-
 export run_exp
+
+include("results_visual.jl")
+export analyze_rewards
 
 end # module
