@@ -25,8 +25,8 @@ cartpole_nn(ns, na, rng) = begin
 end
 
 model_dict = Dict(
-    "RL_LSM" => cartpole_lsm,
-    "DRL_LSM" => cartpole_lsm_discr,
+    "LSM" => cartpole_lsm,
+    "DLSM" => cartpole_lsm_discr,
     "NN" => cartpole_nn,
     # "L-STDP" => () -> (println("to be implemented!");throw MethodError),
     )
@@ -46,14 +46,14 @@ rl_dict = Dict(
 
 =#
 
-function run_exp(rng, model_name::String="RL_LSM"; total_eps=100, visual=nothing)
+function run_exp(rng; model_type::String="RL_LSM", total_eps=100, visual=nothing)
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
     env = CartPoleEnv(; T = Float32, rng = rng)
     ns, na = length(state(env)), length(action_space(env))
 
-    model = model_dict[model_name](ns, na, rng)
+    model = model_dict[model_type](ns, na, rng)
 
     opt = opt_dict["RMSPROP"]
 
