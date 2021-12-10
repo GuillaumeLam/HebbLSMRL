@@ -1,87 +1,141 @@
-# using DelimitedFiles
-# using Statistics
-# using StatsBase
-# using StatsPlots
-# using Plots
-# using PyPlot
+begin
+    using DelimitedFiles
+    using Statistics
+    using StatsBase
+    using StatsPlots
+    using Plots
+    using PyPlot
+end
+
+function dict_flatten(dict::Dict)
+    ks = []
+    vs = []
+
+    for (k,v) in dict
+        append!(ks, fill(k, length(v)))
+        append!(vs, v)
+    end
+
+    return ks, vs
+end
+
+function to_str(vec)
+    str = ""
+
+    for e in vec
+        str *= string(e)
+        str *= "-"
+    end
+
+    str = chop(str, tail=1)
+
+    return str
+end
+
+function get_top(p,v)
+
+    lim = size(v)[1]
+    bot = 0
+    if p >= 100
+        bot = 1
+    elseif p <= 0
+        bot = lim
+    else
+        idx = Int(floor(lim * (1-p/100)))
+        bot = idx < 1 ? 1 : idx
+    end
+
+    return v[bot:end,:]
+end
 
 function analyze_rewards()
-	results_path = "../results/"
-	save_path = "../plots/"
+    results_path = pwd()*"/results/"
+    save_path = pwd()*"/plots/"
 
-	model_type = "DRL_LSM"
+    model_type = "LSM"
 
-	aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
+    aggr = Dict("Mean" => Dict(), "IQM" => Dict(), "MEDIAN" => Dict(), "OG" => Dict())
 
-	for file in readdir(results_path)
-	    if !occursin("Q"*model_type, file)
-	        continue
-	    end
+    isdir(save_path) || mkdir(save_path)
 
-	    v = readdlm(results_path*file)
-	    n_eps = size(v)[2]
+    eps = Vector{Int64}(undef, 0)
 
-	    μ = vec(mean(v, dims=1))
-	    σ = vec(std(v, dims=1))
-	    x̃ = vec(median(v, dims=1))
+    for file in readdir(results_path)
+        if !occursin("Q"*model_type, file)
+            continue
+        end
 
-	    display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
-	    savefig(save_path*"Q$(model_type)_avg$(n_eps)ep-reward")
+        v = readdlm(results_path*file)
 
-	    display(Plots.plot([1:length(x̃);],x̃, color=:lightblue, ribbon=σ, label=false))
-	    savefig(save_path*"Q$(model_type)_med$(n_eps)ep-reward")
+        # order runs by max val hit, lowest to highest
+        v = sortslices(v, dims=1, by=x->max(x...))
 
-	    tmp_mean = mean(v,dims=2)
-	    # MEAN_μ = mean(tmp_mean)
-	    # MEAN_σ = std(tmp_mean)
+        # get top p% runs (0-100)%
+        p = 25
 
-	    tmp_iq = mapslices((x)->mean(collect(trim(x,prop=0.25))), v, dims=2)
-	    # IQ_μ = mean(tmp_iq)
-	    # IQ_σ = std(tmp_iq)
+        v = get_top(p,v)
 
-	    tmp_med = median(v,dims=2)
-	    # MED_μ = mean(tmp_med)
-	    # MED_σ = std(tmp_med)
+        n_eps = size(v)[2]
 
-	    γ = 200
-	    tmp_og = mapslices((x)->mean([min(e,γ) for e in x]), v, dims=2)
-	    # OG_μ = mean(tmp_og)
-	    # OG_σ = std(tmp_og)
+        μ = vec(mean(v, dims=1))
+        σ = vec(std(v, dims=1))
+        x̃ = vec(median(v, dims=1))
 
-	    padded_n_eps = lpad.(string(n_eps), 5)
+        Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false)
+        Plots.plot!([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false)
+        Plots.savefig(save_path*"Q$(model_type)_avg&med_e=$(n_eps)")
 
-	    aggr["Mean"][padded_n_eps] = tmp_mean
-	    aggr["IQM"][padded_n_eps] = tmp_iq
-	    aggr["MEDIAN"][padded_n_eps] = tmp_med
-	    aggr["OG"][padded_n_eps] = tmp_og
-	end
+        # display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
+        # # Plots.savefig(save_path*"Q$(model_type)_avg_e=$(n_eps)")
+        #
+        # display(Plots.plot([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false))
 
-	function dict_flatten(dict::Dict)
-	    ks = []
-	    vs = []
+        return
+        Plots.savefig(save_path*"Q$(model_type)_med_e=$(n_eps)")
 
-	    for (k,v) in dict
-	        append!(ks, fill(k, length(v)))
-	        append!(vs, v)
-	    end
+        tmp_mean = mean(v,dims=2)
+        # MEAN_μ = mean(tmp_mean)
+        # MEAN_σ = std(tmp_mean)
 
-	    return ks, vs
-	end
+        tmp_iq = mapslices((x)->mean(collect(trim(x,prop=0.25))), v, dims=2)
+        # IQ_μ = mean(tmp_iq)
+        # IQ_σ = std(tmp_iq)
 
-	colors = distinguishable_colors(4, RGB(0.3,0.3,0.4))
-	Plots.plot(layout=(2,2))
+        tmp_med = median(v,dims=2)
+        # MED_μ = mean(tmp_med)
+        # MED_σ = std(tmp_med)
 
-	for (i, (plot_title, dict)) in enumerate(aggr)
-	    if i == length(aggr)
-	        display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
-	    else
-	        boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
-	    end
-	end
+        γ = 200
+        tmp_og = mapslices((x)->mean([min(e,γ) for e in x]), v, dims=2)
+        # OG_μ = mean(tmp_og)
+        # OG_σ = std(tmp_og)
 
-	#figure out groupedboxplot
+        padded_n_eps = lpad.(string(n_eps), 5)
 
-	savefig(save_path*"Q$(model_type)_100vs500vs1000vs10k-eps")
+        append!(eps, n_eps)
+
+        n_eps = string(n_eps)
+
+        aggr["Mean"][n_eps] = tmp_mean
+        aggr["IQM"][n_eps] = tmp_iq
+        aggr["MEDIAN"][n_eps] = tmp_med
+        aggr["OG"][n_eps] = tmp_og
+    end
+
+    colors = distinguishable_colors(4, RGB(0.3,0.3,0.4))
+    Plots.plot(layout=(2,2))
+
+    for (i, (plot_title, dict)) in enumerate(aggr)
+        if i == length(aggr)
+            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
+        else
+            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
+        end
+    end
+
+    #figure out groupedboxplot
+
+    Plots.savefig(save_path*"Q$(model_type)_[$(to_str(eps))]-eps")
 end
 
 #todo
