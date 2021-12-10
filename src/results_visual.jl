@@ -34,7 +34,7 @@ end
 
 function get_top(p,v)
 
-    lim = size(v)[1]
+    lim = size(v)[2]
     bot = 0
     if p >= 100
         bot = 1
@@ -45,7 +45,7 @@ function get_top(p,v)
         bot = idx < 1 ? 1 : idx
     end
 
-    return v[bot:end,:]
+    return v[:,bot:end]
 end
 
 function analyze_rewards()
@@ -68,52 +68,47 @@ function analyze_rewards()
         v = readdlm(results_path*file)
 
         # order runs by max val hit, lowest to highest
-        v = sortslices(v, dims=1, by=x->max(x...))
+        v = sortslices(v, dims=2, by=x->max(x...))
 
         # get top p% runs (0-100)%
-        p = 25
+        p = 50
 
         v = get_top(p,v)
 
-        n_eps = size(v)[2]
+        n_eps = size(v)[1]
 
-        μ = vec(mean(v, dims=1))
-        σ = vec(std(v, dims=1))
-        x̃ = vec(median(v, dims=1))
+        μ = vec(mean(v, dims=2))
+        σ = vec(std(v, dims=2))
+        x̃ = vec(median(v, dims=2))
 
-        Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false)
-        Plots.plot!([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false)
-        Plots.savefig(save_path*"Q$(model_type)_avg&med_e=$(n_eps)")
+        # Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false)
+        # Plots.plot!([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false)
+        # Plots.savefig(save_path*"Q$(model_type)_avg&med_e=$(n_eps)")
 
-        # display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
-        # # Plots.savefig(save_path*"Q$(model_type)_avg_e=$(n_eps)")
-        #
-        # display(Plots.plot([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false))
+        display(Plots.plot([1:length(μ);],μ, color=:lightblue, ribbon=σ, label=false))
+        Plots.savefig(save_path*"Q$(model_type)_avg_e=$(n_eps)")
 
-        return
+        display(Plots.plot([1:length(x̃);],x̃, color=:lightgreen, ribbon=σ, label=false))
         Plots.savefig(save_path*"Q$(model_type)_med_e=$(n_eps)")
 
-        tmp_mean = mean(v,dims=2)
+        tmp_mean = mean(v,dims=1)
         # MEAN_μ = mean(tmp_mean)
         # MEAN_σ = std(tmp_mean)
 
-        tmp_iq = mapslices((x)->mean(collect(trim(x,prop=0.25))), v, dims=2)
+        tmp_iq = mapslices((x)->mean(collect(trim(x,prop=0.25))), v, dims=1)
         # IQ_μ = mean(tmp_iq)
         # IQ_σ = std(tmp_iq)
 
-        tmp_med = median(v,dims=2)
+        tmp_med = median(v,dims=1)
         # MED_μ = mean(tmp_med)
         # MED_σ = std(tmp_med)
 
         γ = 200
-        tmp_og = mapslices((x)->mean([min(e,γ) for e in x]), v, dims=2)
+        tmp_og = mapslices((x)->mean([min(e,γ) for e in x]), v, dims=1)
         # OG_μ = mean(tmp_og)
         # OG_σ = std(tmp_og)
 
-        padded_n_eps = lpad.(string(n_eps), 5)
-
         append!(eps, n_eps)
-
         n_eps = string(n_eps)
 
         aggr["Mean"][n_eps] = tmp_mean
@@ -137,6 +132,8 @@ function analyze_rewards()
 
     Plots.savefig(save_path*"Q$(model_type)_[$(to_str(eps))]-eps")
 end
+
+analyze_rewards()
 
 #todo
 # analyze_rewards() -> analyzes rewards in default path

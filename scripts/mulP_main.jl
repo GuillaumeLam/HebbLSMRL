@@ -33,8 +33,9 @@ for (j, total_ep) in enumerate(total_eps)
 
 	rewards = pmap((rng)->(run_exp(rng, model_type=model_type, total_eps=total_ep)), rngs)
 
-	io = open("./results/Q$model_type-total_ep=$total_ep.txt", "w") do io
-		writedlm(io, hcat(rewards...)')
+	# store col first
+	io = open("./results/Q$model_type-e=$total_ep.txt", "w") do io
+		writedlm(io, hcat(rewards...))
 		@info "Logged all seeded experiments for $total_ep episodes!"
 	end
 
