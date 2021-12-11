@@ -4,7 +4,7 @@ begin
     using StatsBase
     using StatsPlots
     using Plots
-    using PyPlot
+    # using PyPlot
 end
 
 function dict_flatten(dict::Dict)

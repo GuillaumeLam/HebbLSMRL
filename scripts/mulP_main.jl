@@ -1,5 +1,9 @@
+using Pkg
+Pkg.activate(".")
+Pkg.instantiate()
+
 using Distributed
-addprocs(2)
+addprocs(8)
 
 @everywhere begin
 	using Pkg
@@ -31,6 +35,7 @@ rngs = StableRNG.(seeds)
 for (j, total_ep) in enumerate(total_eps)
 	@info "Running each experiments for $total_ep episodes"
 
+	isdir("./results") || mkdir("./results")
 	rewards = pmap((rng)->(run_exp(rng, model_type=model_type, total_eps=total_ep)), rngs)
 
 	# store col first

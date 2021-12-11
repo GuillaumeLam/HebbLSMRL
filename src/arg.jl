@@ -5,7 +5,7 @@ mutable struct Args
 	total_eps
 	num_of_simulations
 
-	Args() = new("LSM", [100 250 500], 10)
+	Args() = new("LSM", [100 250 500 1000], 24)
 
 	function (a::Args)(param, val)
 		try

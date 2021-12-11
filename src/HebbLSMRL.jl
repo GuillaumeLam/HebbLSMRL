@@ -11,7 +11,7 @@ using Statistics
 using StatsBase
 using StatsPlots
 using Plots
-using PyPlot
+# using PyPlot
 
 include("arg.jl")
 export get_main_arg, get_t_main_arg, get_Args
