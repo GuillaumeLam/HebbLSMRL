@@ -1,52 +1,84 @@
 using Pkg
-Pkg.activate("..")
+Pkg.activate(".")
 Pkg.instantiate()
 
 using HebbLSMRL
 
-# include("../arg.jl")
-# include("./rl-rc/data_pipeline.jl")
+model_type, total_eps, n_sim, parallel = get_main_arg(get_Args())
+total_eps = 100
+n_sim = 4
+parallel = true
 
-using DelimitedFiles
-using StableRNGs
+if parallel
+	using Distributed
+	using SharedArrays
+	addprocs(2)
+else
+	using StableRNGs
+end
 
-# seeds = [001993 109603 619089 071198 383163 213556 410290 908818 123123 456456]
-seeds = [809669]
+if parallel
+	@everywhere begin
+		using Pkg
+		Pkg.activate(".")
+		Pkg.instantiate()
+
+		using HebbLSMRL
+
+		using DelimitedFiles
+		using Random
+		using StableRNGs
+
+		using ProgressMeter
+	end
+end
+
+m_seed = 161803
+# m_seed = 314156
+
+m_rng = StableRNG(m_seed)
+
+seeds = rand(m_rng, 000000:999999, n_sim)
 rngs = StableRNG.(seeds)
 
-model_type, total_eps = get_main_arg(get_Args())
-total_eps = 100
-
-function main(rngs, model_type, total_eps)
+function main(rngs, model_type, total_eps, parallel)
 	for (j, total_ep) in enumerate(total_eps)
 		@info "Running each experiments for $total_ep episodes"
 		isdir("./results") || mkdir("./results")
 
-		frame = Matrix{Float64}(undef, total_ep, length(rngs))
+		if !parallel
+			frame = Matrix{Float64}(undef, total_ep, length(rngs))
 
-		for (i, rng) in enumerate(rngs)
-			@info "Starting experiment $i"
-			# reward = run_exp(StableRNG(seed), model_type=model_type, total_eps=total_ep)
-			HebbLSMRL.run_exp!(rng, frame[:,i], model_type=model_type, total_eps=total_ep)
-			@info "Completed $(i/length(rngs)*100)% of experiments of $total_ep episodes"
-			# frame = hcat(frame, reward)
-			GC.gc()
-		end
+			for (i, rng) in enumerate(rngs)
+				@info "Starting experiment $i"
+				# reward = run_exp(StableRNG(seed), model_type=model_type, total_eps=total_ep)
+				HebbLSMRL.run_exp!(rng, frame[:,i], model_type=model_type, total_eps=total_ep)
+				@info "Completed $(i/length(rngs)*100)% of experiments of $total_ep episodes"
+				# frame = hcat(frame, reward)
+				GC.gc()
+			end
 
-		# store col first
-		io = open("./results/Q$model_type-e=$total_ep.txt", "a") do io
-			writedlm(io, frame)
-			@info "Logged runs!"
+			# store col first
+			io = open("./results/Q$model_type-e=$total_ep.txt", "a") do io
+				writedlm(io, frame)
+				@info "Logged runs!"
+			end
+		else
+			@info "Launching parallel exp"
+			frame = SharedArray{Float64}(total_ep, n_sim)
+
+			rewards = pmap((i,rng)->(run_exp!(rng, frame[:,i], model_type=model_type, total_eps=total_ep)), enumerate(rngs))
+			# store col first
+			io = open("./results/Q$model_type-e=$total_ep.txt", "w") do io
+				writedlm(io, hcat(rewards...))
+				@info "Logged all seeded experiments for $total_ep episodes!"
+			end
 		end
 
 		@info "Completed $(j/length(total_eps)*100)% of steps experiments"
 	end
 end
 
-@btime main(rngs, model_type, total_eps)
-# => 1 rng
-# 14.705 s (292777993 allocations: 13.44 GiB)
-# => 2 rngs
-# 63.560 s (608922502 allocations: 27.98 GiB)
-# => 3 rngs
-# 84.030 s (909077645 allocations: 41.74 GiB)
+main(rngs, model_type, total_eps, parallel)
+#todo
+#fix

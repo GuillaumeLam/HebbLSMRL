@@ -4,8 +4,9 @@ mutable struct Args
 	model
 	total_eps
 	num_of_simulations
+	parallel
 
-	Args() = new("LSM", [100 250 500 1000], 24)
+	Args() = new("LSM", [100 250 500 1000], 8, false)
 
 	function (a::Args)(param, val)
 		try
@@ -17,8 +18,7 @@ mutable struct Args
 	end
 end
 
-get_main_arg(a::Args) = return a.model, a.total_eps
-get_t_main_arg(a::Args) = return a.model, a.total_eps, a.num_of_simulations
+get_main_arg(a::Args) = return a.model, a.total_eps, a.num_of_simulations, a.parallel
 
 function parse_commandline()
     s = ArgParseSettings()
@@ -39,6 +39,9 @@ function parse_commandline()
 		# 	help = "Optimizer for training model"
 		# 	arg_type = String
 		# 	default = "RMSPROP"
+		"--parallel", "-p"
+			help= "Run simulations in parallel?"
+			arg_type = Bool
     end
 
     return parse_args(s)
