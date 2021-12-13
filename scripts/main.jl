@@ -4,7 +4,7 @@ Pkg.instantiate()
 
 using HebbLSMRL
 
-model_type, total_eps, n_sim, parallel = arg(get_Args())
+model_type, total_eps, n_sim, parallel = args(get_Args())
 
 if parallel
 	using Distributed
@@ -22,10 +22,7 @@ if parallel
 		using HebbLSMRL
 
 		using DelimitedFiles
-		using Random
 		using StableRNGs
-
-		using ProgressMeter
 	end
 end
 

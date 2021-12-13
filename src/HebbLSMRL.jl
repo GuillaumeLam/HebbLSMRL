@@ -4,16 +4,14 @@ using ArgParse
 using DelimitedFiles
 using Flux
 using LiquidStateMachine
-using Random
 using ReinforcementLearning
 using StableRNGs
 using Statistics
-using StatsBase
 using StatsPlots
-using Plots; gr()
+using Plots
 
 include("arg.jl")
-export arg, get_Args
+export args, get_Args
 
 include("experiments.jl")
 export run_exp
