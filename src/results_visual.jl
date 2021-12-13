@@ -102,7 +102,7 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
         # MEAN_μ = mean(tmp_mean)
         # MEAN_σ = std(tmp_mean)
 
-        tmp_iq = mapslices((x)->mean(collect(trim(x,prop=0.25))), m, dims=1)
+        tmp_iq = mapslices((x)->mean(collect(StatsBase.trim(x,prop=0.25))), m, dims=1)
         # IQ_μ = mean(tmp_iq)
         # IQ_σ = std(tmp_iq)
 
@@ -141,7 +141,7 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
         m = readdlm(results_path*file)
         analyze_run!(m, aggr, top_p=top_p)
         n_eps = size(m)[1]
-        Plots.savefig(save_path*"Q$(model_type)_avg&med_e=$(n_eps)")
+        Plots.savefig(save_path*"Q$(model_type)_avg&med_top=$(isnothing(top_p) ? "100" : string(top_p))_e=$(n_eps)")
     end
 
     colors = distinguishable_colors(4, RGB(0.3,0.3,0.4))
@@ -149,9 +149,9 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
 
     for (i, (plot_title, dict)) in enumerate(aggr.dict)
         if i == length(aggr.dict)
-            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i, ylim=(0,Inf)))
+            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
         else
-            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i, ylim=(0,Inf))
+            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
         end
     end
 
@@ -160,5 +160,5 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
     #figure out groupedboxplot
 
     eps = sort(collect(keys(aggr.dict["IQM"])))
-    Plots.savefig(save_path*"Q$(model_type)_[$(to_str(eps))]-eps")
+    Plots.savefig(save_path*"Q$(model_type)_top=$(isnothing(top_p) ? "100" : string(top_p))_e=[$(to_str(eps))]")
 end

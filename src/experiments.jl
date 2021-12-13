@@ -5,6 +5,7 @@ using Random
 using LiquidStateMachine
 
 using BenchmarkTools
+using TimerOutputs
 
 cartpole_lsm(ns, na, rng) = begin
     # env_param = LSM_Params(ns*2,na,"cartpole")
@@ -119,6 +120,8 @@ function get_agent(rng, env, model_type, opt_type, total_eps, update_freq)
     =#
 end
 
+const to = TimerOutput()
+
 #todo
 # - make function iter over rngs and place subsequent in out_m
 # - throw err if length(out_v)≠total_eps
@@ -130,8 +133,63 @@ function run_exp!(rng, out_v; model_type::String="LSM", total_eps=100, visual=no
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
+    # @allocated all: 14551172160B ~13.55GB
+
+    @timeit to "env setup" env = CartPoleEnv(T=Float32, rng=rng)
+    # 2.361 μs (33 allocations: 1.06 KiB)
+    # @alloc
+
+
+    @timeit to "agent setup" agent = get_agent(rng, env, model_type, "RMSPROP", total_eps, 10)
+    # 416.113 μs (439 allocations: 983.02 KiB)
+    # => packed in 1 line LSM init
+    # 224.813 μs (437 allocations: 982.94 KiB)
+    # => no visual
+    # 222.399 μs (417 allocations: 980.67 KiB)
+
+
+    # stop_condition = StopAfterStep(total_steps, is_show_progress=!haskey(ENV, "CI"))
+    stop_condition = StopAfterEpisode(total_eps, is_show_progress=!haskey(ENV, "CI"))
+    # 706.248 ns (9 allocations: 576 bytes)
+    hook = TotalRewardPerEpisode()
+    # 26.175 ns (2 allocations: 112 bytes)
+
+    @timeit to "exp run" run(agent, env, stop_condition, hook)
+    # 30.661 ms (229412 allocations: 10.64 MiB)
+
+    # println(model.readout.layers[1].W)
+
+    # fetch exp run states
+    # println(Q_agent.policy.learner.approximator.model.states_dict) # => returning nothing for some reason
+
+    if !isnothing(visual) && isa(visual, Vector{AbstractDict})
+        # frames = Q_agent.policy.learner.approximator.model.states_dict
+        # push!(visual, frames)
+        push!(visual, Q_agent.policy.learner.approximator.model.states_dict)
+    end
+    # 0.017 ns (0 allocations: 0 bytes)
+
+    # println(size(frames["env"]))
+    # println(size(frames["out"]))
+    # println(size(frames["spike"]))
+    # println(size(frames["spike"][1]))
+
+    @timeit to "copying" copy!(out_v, hook.rewards)
+    # 17.770 ns (0 allocations: 0 bytes)
+
+    println(to)
+end
+
+function run_exp(rng; model_type::String="LSM", total_eps=100, visual=nothing)
+    # rng = StableRNG(seed)
+    # Random.seed!(seed)
+
+    # @allocated all: 14551172160B ~13.55GB
+
     env = CartPoleEnv(T=Float32, rng=rng)
     # 2.361 μs (33 allocations: 1.06 KiB)
+    # @alloc
+
 
     agent = get_agent(rng, env, model_type, "RMSPROP", total_eps, 10)
     # 416.113 μs (439 allocations: 983.02 KiB)
@@ -167,8 +225,5 @@ function run_exp!(rng, out_v; model_type::String="LSM", total_eps=100, visual=no
     # println(size(frames["spike"]))
     # println(size(frames["spike"][1]))
 
-    copy!(out_v, hook.rewards)
-    # 17.770 ns (0 allocations: 0 bytes)
-
-    GC.gc()
+    return hook.rewards
 end

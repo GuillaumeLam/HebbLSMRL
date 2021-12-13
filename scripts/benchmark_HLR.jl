@@ -6,9 +6,9 @@ begin
 end
 
 rng = StableRNG(12345)
-v = Array{Float64}(undef, 100)
+v = zeros(100)
 
-@btime HebbLSMRL.run_exp!(rng, v)
+HebbLSMRL.run_exp!(rng, v)
 # base method 31.416 s (291321671 allocations: 13.41 GiB)
 #
 # => prealloc result array

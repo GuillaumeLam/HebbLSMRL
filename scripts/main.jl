@@ -5,14 +5,13 @@ Pkg.instantiate()
 using HebbLSMRL
 
 model_type, total_eps, n_sim, parallel = get_main_arg(get_Args())
-total_eps = 100
-n_sim = 4
+n_sim = 32
 parallel = true
 
 if parallel
 	using Distributed
 	using SharedArrays
-	addprocs(2)
+	addprocs(8)
 else
 	using StableRNGs
 end
@@ -65,9 +64,8 @@ function main(rngs, model_type, total_eps, parallel)
 			end
 		else
 			@info "Launching parallel exp"
-			frame = SharedArray{Float64}(total_ep, n_sim)
 
-			rewards = pmap((i,rng)->(run_exp!(rng, frame[:,i], model_type=model_type, total_eps=total_ep)), enumerate(rngs))
+			rewards = pmap((rng)->(HebbLSMRL.run_exp(rng, model_type=model_type, total_eps=total_ep)), rngs)
 			# store col first
 			io = open("./results/Q$model_type-e=$total_ep.txt", "w") do io
 				writedlm(io, hcat(rewards...))
@@ -80,5 +78,3 @@ function main(rngs, model_type, total_eps, parallel)
 end
 
 main(rngs, model_type, total_eps, parallel)
-#todo
-#fix
