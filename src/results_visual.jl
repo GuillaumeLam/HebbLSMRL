@@ -46,7 +46,7 @@ function get_top(p,m)
         bot = idx < 1 ? 1 : idx
     end
 
-    return v[:,bot:end]
+    return m[:,bot:end]
 end
 
 struct AggrMetric
@@ -95,7 +95,7 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
         ylabel="Reward",
         title="Median reward over episode",
         label=false)
-    display(Plots.plot(p1, p2, layout=(2,1)))
+    display(Plots.plot(p1, p2, layout=(2,1), plot_title=(isnothing(top_p) ? "All Runs" : "Top $top_p% Runs")))
 
     if !isnothing(aggr)
         tmp_mean = mean(m,dims=1)
@@ -115,8 +115,10 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
         # base_μ = mean(tmp_base)
         # base_σ = std(tmp_base)
 
+        # pad to preserve order when num of episode gets large
         n_eps = string(size(m)[1])
-        add!(aggr, "MEAN", n_eps, tmp_mean)
+        padded_n_eps = lpad.(n_eps, 5)
+        add!(aggr, "MEAN", padded_n_eps, tmp_mean)
         add!(aggr, "IQM", n_eps, tmp_iq)
         add!(aggr, "MEDIAN", n_eps, tmp_med)
         add!(aggr, "BASE", n_eps, tmp_base)
@@ -147,11 +149,13 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
 
     for (i, (plot_title, dict)) in enumerate(aggr.dict)
         if i == length(aggr.dict)
-            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
+            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i, ylim=(0,Inf)))
         else
-            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
+            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i, ylim=(0,Inf))
         end
     end
+
+    Plots.plot!(plot_title=(isnothing(top_p) ? "All Runs" : "Top $top_p% Runs"))
 
     #figure out groupedboxplot
 
