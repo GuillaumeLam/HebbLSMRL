@@ -6,7 +6,7 @@ mutable struct Args
 	num_of_simulations
 	parallel
 
-	Args() = new("LSM", [100 250 500 1000], 8, false)
+	Args() = new("LSM", [100 250 500 1000], 32, true)
 
 	function (a::Args)(param, val)
 		try
@@ -18,12 +18,12 @@ mutable struct Args
 	end
 end
 
-get_main_arg(a::Args) = return a.model, a.total_eps, a.num_of_simulations, a.parallel
+args(a::Args) = return a.model, a.total_eps, a.num_of_simulations, a.parallel
 
 function parse_commandline()
     s = ArgParseSettings()
 
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "--model", "-m"
             help = "Model type to train with Q-learning"
             arg_type = String
@@ -57,5 +57,3 @@ function get_Args()
 	end
 	return args
 end
-
-# model_type, total_eps, #_sim = get_args()

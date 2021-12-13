@@ -1,12 +1,3 @@
-begin
-    using DelimitedFiles
-    using Statistics
-    using StatsBase
-    using StatsPlots
-    using Plots
-    # using PyPlot
-end
-
 function dict_flatten(dict::Dict)
     ks = []
     vs = []
@@ -68,7 +59,7 @@ function add!(aggr::AggrMetric, metric, ep, val)
 end
 
 
-function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}; top_p=nothing::Union{Int64,Nothing})
+function plot_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}; top_p=nothing::Union{Int64,Nothing})
     # order the runs by max val hit, lowest to highest in cols
     m = sortslices(m, dims=2, by=x->max(x...))
 
@@ -77,9 +68,9 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
         m = get_top(top_p, m)
     end
 
-    μ = vec(mean(m, dims=2))
-    σ = vec(std(m, dims=2))
-    x̃ = vec(median(m, dims=2))
+    μ = vec(Statistics.mean(m, dims=2))
+    σ = vec(Statistics.std(m, dims=2))
+    x̃ = vec(Statistics.median(m, dims=2))
 
     p1 = Plots.plot(
         [1:length(μ);], μ, ribbon=σ,
@@ -98,20 +89,20 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
     display(Plots.plot(p1, p2, layout=(2,1), plot_title=(isnothing(top_p) ? "All Runs" : "Top $top_p% Runs")))
 
     if !isnothing(aggr)
-        tmp_mean = mean(m,dims=1)
+        tmp_mean = Statistics.mean(m,dims=1)
         # MEAN_μ = mean(tmp_mean)
         # MEAN_σ = std(tmp_mean)
 
-        tmp_iq = mapslices((x)->mean(collect(StatsBase.trim(x,prop=0.25))), m, dims=1)
+        tmp_iq = mapslices((x)->Statistics.mean(collect(StatsBase.trim(x,prop=0.25))), m, dims=1)
         # IQ_μ = mean(tmp_iq)
         # IQ_σ = std(tmp_iq)
 
-        tmp_med = median(m,dims=1)
+        tmp_med = Statistics.median(m,dims=1)
         # MED_μ = mean(tmp_med)
         # MED_σ = std(tmp_med)
 
         γ = 200
-        tmp_base = mapslices((x)->mean([min(e,γ) for e in x]), m, dims=1)
+        tmp_base = mapslices((x)->Statistics.mean([min(e,γ) for e in x]), m, dims=1)
         # base_μ = mean(tmp_base)
         # base_σ = std(tmp_base)
 
@@ -125,7 +116,7 @@ function analyze_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}
     end
 end
 
-function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,Nothing})
+function plot_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,Nothing})
     results_path = pwd()*"/results/"
     save_path = pwd()*"/plots/"
 
@@ -138,7 +129,7 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
             continue
         end
 
-        m = readdlm(results_path*file)
+        m = DelimitedFiles.readdlm(results_path*file)
         analyze_run!(m, aggr, top_p=top_p)
         n_eps = size(m)[1]
         Plots.savefig(save_path*"Q$(model_type)_avg&med_top=$(isnothing(top_p) ? "100" : string(top_p))_e=$(n_eps)")
@@ -149,9 +140,9 @@ function analyze_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,
 
     for (i, (plot_title, dict)) in enumerate(aggr.dict)
         if i == length(aggr.dict)
-            display(boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
+            display(StatsPlots.boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i))
         else
-            boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
+            StatsPlots.boxplot!(dict_flatten(dict)..., color=colors[i], label=false, xlabel=plot_title, subplot=i)
         end
     end
 

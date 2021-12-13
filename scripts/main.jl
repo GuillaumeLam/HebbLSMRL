@@ -4,13 +4,10 @@ Pkg.instantiate()
 
 using HebbLSMRL
 
-model_type, total_eps, n_sim, parallel = get_main_arg(get_Args())
-n_sim = 32
-parallel = true
+model_type, total_eps, n_sim, parallel = arg(get_Args())
 
 if parallel
 	using Distributed
-	using SharedArrays
 	addprocs(8)
 else
 	using StableRNGs
@@ -60,7 +57,7 @@ function main(rngs, model_type, total_eps, parallel)
 			# store col first
 			io = open("./results/Q$model_type-e=$total_ep.txt", "a") do io
 				writedlm(io, frame)
-				@info "Logged runs!"
+				@info "Logged all seeded experiments for $total_ep episodes!"
 			end
 		else
 			@info "Launching parallel exp"
