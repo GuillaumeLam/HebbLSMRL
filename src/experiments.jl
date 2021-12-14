@@ -101,7 +101,7 @@ function get_agent(rng, env, model_type, opt_type, total_eps, update_freq)
     =#
 end
 
-function exp_base(rng; model_type::String="LSM", total_eps=100, visual=nothing)
+function exp_base(rng; model_type::String="LSM", total_eps::Int=100, visual=nothing)
     # rng = StableRNG(seed)
     # Random.seed!(seed)
 
@@ -136,10 +136,44 @@ function exp_base(rng; model_type::String="LSM", total_eps=100, visual=nothing)
     return hook.rewards
 end
 
-function run_exp!(rng, out_v; model_type::String="LSM", total_eps=100, visual=nothing)
+function run_exp!(rng, out_v; model_type::String="LSM", total_eps::Int=100, visual=nothing)
     copy!(out_v, exp_base(rng, model_type=model_type, total_eps=total_eps, visual=visual))
 end
 
-function run_exp(rng; model_type::String="LSM", total_eps=100, visual=nothing)
+function run_exp(rng; model_type::String="LSM", total_eps::Int=100, visual=nothing)
     exp_base(rng, model_type=model_type, total_eps=total_eps, visual=visual)
+end
+
+function exp(rngs::AbstractVector{R}, total_eps, parallel=false, model_type::String="LSM", visual=nothing) where {R<:AbstractRNG}
+	for (j, total_ep) in enumerate(total_eps)
+		@info "Running each experiments for $total_ep episodes"
+		isdir("./results") || mkdir("./results")
+
+		if !parallel
+			frame = Matrix{Float64}(undef, total_ep, length(rngs))
+
+			for (i, rng) in enumerate(rngs)
+				@info "Starting experiment $i"
+				run_exp!(rng, frame[:,i], model_type=model_type, total_eps=total_ep, visual=visual)
+				@info "Completed $(i/length(rngs)*100)% of experiments of $total_ep episodes"
+			end
+
+			# store col first
+			io = open("./results/Q$model_type-e=$total_ep.txt", "a") do io
+				writedlm(io, frame)
+				@info "Logged all seeded experiments for $total_ep episodes!"
+			end
+		else
+			@info "Launching parallel exp"
+
+			rewards = pmap((rng)->(run_exp(rng, model_type=model_type, total_eps=total_ep)), rngs)
+			# store col first
+			io = open("./results/Q$model_type-e=$total_ep.txt", "w") do io
+				writedlm(io, hcat(rewards...))
+				@info "Logged all seeded experiments for $total_ep episodes!"
+			end
+		end
+
+		@info "Completed $(j/length(total_eps)*100)% of steps experiments"
+	end
 end
