@@ -147,7 +147,7 @@ end
 function exp(rngs::AbstractVector{R}, total_eps, parallel=false, model_type::String="LSM", visual=nothing) where {R<:AbstractRNG}
 	for (j, total_ep) in enumerate(total_eps)
 		@info "Running each experiments for $total_ep episodes"
-		isdir("./results") || mkdir("./results")
+		isdir("../results") || mkdir("../results")
 
 		if !parallel
 			frame = Matrix{Float64}(undef, total_ep, length(rngs))
@@ -159,7 +159,7 @@ function exp(rngs::AbstractVector{R}, total_eps, parallel=false, model_type::Str
 			end
 
 			# store col first
-			io = open("./results/Q$model_type-e=$total_ep.txt", "a") do io
+			io = open("../results/Q$model_type-e=$total_ep.txt", "a") do io
 				writedlm(io, frame)
 				@info "Logged all seeded experiments for $total_ep episodes!"
 			end
@@ -168,7 +168,7 @@ function exp(rngs::AbstractVector{R}, total_eps, parallel=false, model_type::Str
 
 			rewards = pmap((rng)->(run_exp(rng, model_type=model_type, total_eps=total_ep)), rngs)
 			# store col first
-			io = open("./results/Q$model_type-e=$total_ep.txt", "w") do io
+			io = open("../results/Q$model_type-e=$total_ep.txt", "w") do io
 				writedlm(io, hcat(rewards...))
 				@info "Logged all seeded experiments for $total_ep episodes!"
 			end

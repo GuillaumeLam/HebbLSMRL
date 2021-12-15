@@ -7,6 +7,7 @@ using LiquidStateMachine
 using ReinforcementLearning
 using Random
 using Statistics
+using StatsBase
 using StatsPlots
 using Plots
 

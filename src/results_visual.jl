@@ -117,8 +117,8 @@ function plot_run!(m::AbstractMatrix, aggr=nothing::Union{AggrMetric,Nothing}; t
 end
 
 function plot_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,Nothing})
-    results_path = pwd()*"/results/"
-    save_path = pwd()*"/plots/"
+    results_path = pwd()*"/../results/"
+    save_path = pwd()*"/../plots/"
 
     aggr = AggrMetric()
 
@@ -130,7 +130,7 @@ function plot_aggregate(model_type="LSM"::String; top_p=nothing::Union{Int64,Not
         end
 
         m = DelimitedFiles.readdlm(results_path*file)
-        analyze_run!(m, aggr, top_p=top_p)
+        plot_run!(m, aggr, top_p=top_p)
         n_eps = size(m)[1]
         Plots.savefig(save_path*"Q$(model_type)_avg&med_top=$(isnothing(top_p) ? "100" : string(top_p))_e=$(n_eps)")
     end

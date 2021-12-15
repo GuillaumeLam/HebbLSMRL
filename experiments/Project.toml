@@ -1,0 +1,4 @@
+[deps]
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+HebbLSMRL = "86341c58-2e67-4a5f-8de4-806e3b988c33"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
