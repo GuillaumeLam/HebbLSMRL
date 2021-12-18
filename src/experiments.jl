@@ -136,19 +136,19 @@ function exp_base(rng; model_type::String="LSM", total_eps::Int=100, loss_vec=no
 
     # stop_condition = StopAfterStep(total_steps, is_show_progress=!haskey(ENV, "CI"))
     stop_condition = StopAfterEpisode(total_eps, is_show_progress=!haskey(ENV, "CI"))
-    # hook = TotalRewardPerEpisode()
+    hook = TotalRewardPerEpisode()
 
 	# losses = Vector{Float64}()
 
-	hook = ComposedHook(
-		TotalRewardPerEpisode(),
-		#make custom hook to contain losses?
-		DoEveryNEpisode() do t, agent, env
-			# println(t, agent, env)
-			# println(agent.policy.learner.loss)
-			!isnothing(loss_vec) ? push!(loss_vec, agent.policy.learner.loss) : nothing
-		end
-	)
+	# hook = ComposedHook(
+	# 	TotalRewardPerEpisode(),
+	# 	#make custom hook to contain losses?
+	# 	DoEveryNEpisode() do t, agent, env
+	# 		# println(t, agent, env)
+	# 		# println(agent.policy.learner.loss)
+	# 		!isnothing(loss_vec) ? push!(loss_vec, agent.policy.learner.loss) : nothing
+	# 	end
+	# )
 
     run(agent, env, stop_condition, hook)
 

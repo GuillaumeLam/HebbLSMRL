@@ -1,0 +1,3 @@
+-check alloc of LSM & type stability
+-use code in stdp dev for debugging behavior of lsm
+-run file from terminal; if unicodeplots bug, clear julia packages

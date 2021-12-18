@@ -1,0 +1,10 @@
+using Flux
+using StableRNGs
+using LiquidStateMachine
+using ReinforcementLearning
+
+rng=StableRNG(1234)
+lsm = LSM(LSM_Params(4*2,2,"cartpole"), (x)->(genPositive(x)), rng=rng)
+approx = NeuralNetworkApproximator(model = lsm, optimizer = ADAM(1e-3))
+
+params(approx)
